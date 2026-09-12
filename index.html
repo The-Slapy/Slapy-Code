@@ -1,6 +1,6 @@
 <!--
-[SLAPY-VERSION: 1.0.44.2]
-[SLAPY-DESC: Recuperación de Cuenta: Se añadió la funcionalidad de "Olvidé mi contraseña" al modal de autenticación. Utiliza Firebase Auth para enviar un correo de recuperación directamente al email ingresado. Se actualizó la UI para mostrar el enlace solo en el modo de inicio de sesión.]
+[SLAPY-VERSION: 1.0.44.1]
+[SLAPY-DESC: Rediseño UI de Autenticación y Consolidación: Se modernizó la ventana modal de inicio de sesión con controles segmentados y foco dinámico. Se integraron todas las correcciones previas (Auto-hide sidebar, Auto-sanación de nube, Inception bug patch) en un documento maestro restaurado.]
 -->
 <!DOCTYPE html>
 <html lang="es">
@@ -35,6 +35,2340 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+    
+    <style>
+        /* TEMA DINÁMICO (Por defecto: Oscuro) */
+        :root { 
+            --bg-dark: #181818; 
+            --bg-panel: #252526; 
+            --bg-editor: #1e1e1e; 
+            --border: #3c3c3c; 
+            --accent: #007acc; 
+            --text-main: #cccccc; 
+            --text-muted: #888888;
+            --text-bright: #ffffff;
+            --bg-hover: #333333;
+            --bg-active: #37373d;
+            --bg-tab: #2d2d2d;
+        }
+
+        /* OVERRIDES DE MODO CLARO */
+        body.light-mode {
+            --bg-dark: #f3f3f3; 
+            --bg-panel: #ffffff; 
+            --bg-editor: #ffffff; 
+            --border: #cccccc; 
+            --accent: #0066aa; 
+            --text-main: #333333; 
+            --text-muted: #666666;
+            --text-bright: #000000;
+            --bg-hover: #e5e5e5;
+            --bg-active: #d4d4d4;
+            --bg-tab: #ececec;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-dark); color: var(--text-main); overflow: hidden; }
+        
+        /* HEADER PRINCIPAL */
+        header { padding: 0 15px; height: 45px; background-color: var(--bg-panel); display: flex; align-items: center; border-bottom: 1px solid var(--border); z-index: 10; position: relative; transition: 0.3s ease; }
+        
+        .header-left { flex: 1; display: flex; align-items: center; gap: 8px; }
+        .logo { font-size: 15px; font-weight: 600; color: var(--text-bright); display: flex; align-items: center; gap: 10px; margin-right: 5px; }
+        .logo span { color: var(--accent); }
+        .logo button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding:0; display: flex; align-items: center; justify-content: center;}
+        .logo button:hover { color: var(--text-bright); }
+
+        .header-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; }
+        .header-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+        body.fullscreen header { display: none !important; }
+        body.fullscreen .workspace { height: 100vh !important; }
+
+        /* GRUPOS DE BOTONES */
+        .view-controls { display: flex; background-color: var(--bg-dark); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+        .view-controls button { background: none; border: none; color: var(--text-muted); padding: 6px 12px; cursor: pointer; transition: 0.2s; font-size: 12px; font-weight: 500; border-right: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 5px;}
+        .view-controls button:last-child { border-right: none; }
+        .view-controls button:hover { color: var(--text-bright); background-color: var(--bg-hover); }
+        .view-controls button.active { background-color: var(--bg-panel); color: var(--text-bright); }
+        
+        .btn { background: transparent; border: 1px solid transparent; color: var(--text-main); font-size: 12px; cursor: pointer; transition: 0.2s; padding: 6px 12px; border-radius: 4px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn:hover { color: var(--text-bright); background-color: var(--bg-hover); border-color: var(--border); }
+        .btn.active-tool { background-color: var(--bg-dark); color: var(--accent); border-color: var(--accent); }
+        
+        /* EXPLORADOR LATERAL */
+        .workspace { display: flex; flex: 1; height: calc(100vh - 45px); width: 100%; transition: 0.3s ease; position: relative; }
+        .sidebar { width: 280px; background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.2s; flex-shrink: 0; z-index: 50; }
+        .sidebar.unpinned { position: absolute; left: 0; top: 0; height: 100%; transform: translateX(-100%); box-shadow: none; border-right: none;}
+        .sidebar.unpinned.visible { transform: translateX(0); box-shadow: 4px 0 25px rgba(0,0,0,0.6); border-right: 1px solid var(--border);}
+        
+        .side-header { font-size: 11px; font-weight: bold; color: var(--text-muted); padding: 12px 15px; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        .side-header .side-actions { display: flex; gap: 3px; }
+        .side-header button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: 0.2s;}
+        .side-header button:hover { color: var(--text-bright); background-color: var(--bg-hover);}
+        
+        .tree { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .folder-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px 6px 15px; cursor: pointer; color: var(--text-main); font-size: 13px; font-weight: 600; border-left: 3px solid transparent; }
+        .folder-row:hover { background-color: var(--bg-hover); }
+        .folder-row.active-folder { background-color: var(--bg-hover); border-left: 3px solid var(--accent); }
+        .folder-name { display: flex; align-items: center; gap: 6px; }
+        
+        .file-list { margin-left: 15px; margin-top: 2px; margin-bottom: 10px; border-left: 1px solid var(--border); padding-left: 5px;}
+        .file-list.hidden { display: none; }
+        
+        .file-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; cursor: pointer; font-size: 13px; color: var(--text-muted); border-radius: 4px; }
+        .file-row:hover { background-color: var(--bg-hover); color: var(--text-bright); }
+        .file-row.active { background-color: var(--bg-active); color: var(--text-bright); }
+        
+        /* ARCHIVOS DIVIDIDOS */
+        .split-child { margin-left: 15px; font-size: 12px; color: var(--text-muted); padding: 4px 8px; border-left: 1px solid var(--border); border-radius: 0 4px 4px 0;}
+        .split-child:hover { background-color: var(--bg-hover); color: var(--accent); border-left: 1px solid var(--accent); }
+        .split-child.active { background-color: var(--bg-active); color: var(--accent); border-left: 1px solid var(--accent); }
+        
+        .actions { display: none; gap: 2px; }
+        .folder-row:hover .actions, .file-row:hover .actions { display: flex; }
+        .actions button { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 3px; display: flex; align-items: center;}
+        .actions button:hover { color: var(--text-bright); background-color: var(--bg-hover);}
+        .actions .del:hover { color: #d13438 !important; }
+
+        /* FOOTER LATERAL */
+        .sidebar-footer { padding: 12px 15px; border-top: 1px solid var(--border); background-color: var(--bg-dark); }
+        .global-info { display: flex; justify-content: center; margin-bottom: 10px; }
+        .global-info button { width: 100%; text-align: center; font-size: 12px; color: var(--text-muted); background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 6px; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 5px;}
+        .global-info button:hover { color: var(--text-bright); border-color: var(--text-main); background-color: var(--bg-panel); }
+
+        .login-btn { width: 100%; padding: 8px; background: var(--accent); border: none; color: #fff; border-radius: 4px; cursor: pointer; font-size: 12px; transition: 0.2s; font-weight: 600; }
+        .login-btn:hover { background: #005f9e; }
+        
+        .auth-container { display: flex; align-items: center; justify-content: space-between; }
+        .user-info { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-bright); cursor: pointer; padding: 4px; border-radius: 4px; transition: 0.2s; }
+        .user-info:hover { background-color: var(--bg-hover); }
+        .user-avatar { width: 24px; height: 24px; border-radius: 50%; background-color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: white; }
+        
+        .user-actions { display: flex; gap: 4px; }
+        .user-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 15px; padding: 4px 6px; border-radius: 4px; transition: 0.2s; display: flex; align-items: center;}
+        .user-actions button:hover { color: var(--text-bright); background-color: var(--bg-hover); }
+        .user-actions .cloud-icon:hover { color: var(--accent); }
+        .user-actions .refresh-icon:hover { color: #28a745; }
+        .user-actions .logout-icon:hover { color: #d13438; }
+
+        /* ZONA CENTRAL */
+        .main-area { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100%; position: relative;}
+        
+        .empty-workspace { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: var(--bg-dark); z-index: 5; color: var(--text-muted); font-size: 14px; gap: 15px;}
+        .empty-workspace svg { width: 60px; height: 60px; opacity: 0.2; }
+
+        .tabs-bar { height: 35px; background-color: var(--bg-dark); display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; position: relative; z-index: 6;}
+        .tabs-bar::-webkit-scrollbar { height: 2px; }
+        .tab { display: flex; align-items: center; padding: 0 15px; background-color: var(--bg-tab); color: var(--text-muted); font-size: 12px; border-right: 1px solid var(--border); cursor: pointer; min-width: 120px; justify-content: space-between; border-top: 2px solid transparent; border-bottom: 2px solid transparent;}
+        .tab:hover { background-color: var(--bg-editor); }
+        
+        .tab.active { background-color: var(--bg-editor); color: var(--text-bright); border-top-color: var(--accent); }
+        .tab.tab-parent-active { border-bottom-color: var(--accent); } 
+        .tab.tab-child-text span { color: var(--accent); font-style: italic; font-weight: 600; } 
+
+        .tab-close { margin-left: 10px; font-size: 14px; opacity: 0.5; font-style: normal; font-weight: normal; color: var(--text-bright);}
+        .tab-close:hover { opacity: 1; color: #d13438; }
+
+        /* PANTALLAS DIVIDIDAS Y CODEMIRROR */
+        .panels-container { flex: 1; display: flex; overflow: hidden; height: 100%; width: 100%; position: relative; z-index: 6; }
+        .editor-section { display: flex; flex-direction: column; background-color: var(--bg-editor); height: 100%; position: relative; overflow: hidden; }
+        .CodeMirror { flex: 1; font-family: 'Consolas', monospace; height: 100% !important; width: 100% !important; }
+        .cm-matchhighlight { background-color: rgba(184, 134, 11, 0.4) !important; border-radius: 2px; }
+        .cm-match-active { background-color: var(--accent) !important; color: white !important; border-radius: 2px; }
+        
+        .preview-section { background-color: #fff; border-left: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        #iframe-wrapper { flex: 1; position: relative; height: 100%; width: 100%; min-height: 0; }
+        #iframe-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+        .flex-half { flex: 1 1 50%; max-width: 50%; width: 50%; display: flex !important; }
+        .flex-full { flex: 1 1 100%; max-width: 100%; width: 100%; display: flex !important; border-left: none !important; }
+        .hidden-panel { display: none !important; }
+
+        /* BUSCADOR FLOTANTE INTEGRADO */
+        .editor-search-panel { position: absolute; top: 10px; right: 20px; background-color: var(--bg-panel); border: 1px solid var(--border); box-shadow: 0 4px 15px rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 6px; display: none; flex-direction: column; gap: 8px; z-index: 50; width: 500px; max-width: 95vw; }
+        .editor-search-panel.active { display: flex; }
+        .search-row { display: flex; align-items: center; gap: 5px; width: 100%; }
+        .search-row input { flex: 1; min-width: 0; background-color: var(--bg-dark); border: 1px solid var(--border); color: var(--text-bright); padding: 6px; border-radius: 4px; font-size: 12px; outline: none; }
+        .search-row input:focus { border-color: var(--accent); }
+        .search-row .info { color: var(--text-muted); font-size: 11px; min-width: 45px; text-align: center; }
+        .search-row button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+        .search-row button:hover { background-color: var(--bg-hover); color: var(--text-bright); }
+        .replace-btn { background-color: var(--accent) !important; color: white !important; font-size: 11px; padding: 4px 8px !important; }
+        .btn-toggle-block { font-weight: bold; font-family: monospace; font-size: 14px; }
+        .btn-toggle-block.active-tool { background-color: var(--accent) !important; color: white !important; }
+
+        /* INPUTS Y FORMULARIOS */
+        .input-dark { background-color: var(--bg-dark); border: 1px solid var(--border); color: var(--text-bright); padding: 8px; border-radius: 4px; font-size: 12px; outline: none; width: 100%; margin-bottom: 8px; font-family: inherit;}
+        .input-dark:focus { border-color: var(--accent); }
+        textarea.input-dark { resize: vertical; min-height: 80px; }
+        .btn-primary { background-color: var(--accent); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; width: 100%; transition: 0.2s;}
+        .btn-primary:hover { background-color: #005f9e; }
+
+        /* MODALES FLOTANTES */
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(2px); }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: var(--bg-panel); padding: 20px; border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; max-height: 80vh; display: flex; flex-direction: column; }
+        .modal-box h2 { margin: 0 0 15px 0; font-size: 16px; color: var(--text-bright); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; }
+        .close-modal:hover { color: var(--text-bright); }
+        
+        .history-list { overflow-y: auto; flex: 1; padding-right: 5px; }
+        .commit-card { background-color: var(--bg-dark); border: 1px solid var(--border); padding: 12px; border-radius: 4px; margin-bottom: 10px; }
+        .commit-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
+        .commit-title { font-size: 13px; color: var(--text-bright); font-weight: bold; margin-bottom: 5px; }
+        .commit-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+
+        /* PESTAÑAS DE MODAL */
+        .info-tab { background-color: var(--bg-dark); color: var(--text-muted); border: 1px solid var(--border); margin: 0; flex: 1; text-align: center; }
+        .info-tab.active { background-color: var(--accent); color: white; border-color: var(--accent); }
+        .info-content { display: none; flex-direction: column; flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px; }
+        .info-content.active { display: flex; }
+        .info-content p { font-size: 13px; color: var(--text-muted); margin: 8px 0; border-bottom: 1px solid var(--border); padding-bottom: 4px; display: flex; justify-content: space-between;}
+        .info-content b { color: var(--text-bright); }
+
+        /* TIMELINE HISTORIAL LOCAL */
+        .timeline { padding-left: 10px; border-left: 2px solid var(--border); margin-left: 10px; }
+        .time-node { position: relative; margin-bottom: 15px; padding-left: 15px; }
+        .time-dot { position: absolute; left: -20px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg-dark); border: 2px solid var(--accent); }
+        .time-lbl { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; }
+        .time-desc { font-size: 13px; color: var(--text-bright); margin-bottom: 5px; font-weight: 500;}
+
+        /* Notificación Flotante */
+        .toast { position: fixed; bottom: 20px; right: 20px; background-color: var(--accent); color: white; padding: 10px 20px; border-radius: 4px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5); opacity: 0; transform: translateY(20px); transition: 0.3s ease; z-index: 1000; pointer-events: none;}
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        /* DRAG AND DROP OVERLAY */
+        #drop-zone { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,122,204,0.2); border: 2px dashed var(--accent); z-index: 999; display: none; align-items: center; justify-content: center; flex-direction: column; color: var(--text-bright); font-size: 18px; font-weight: bold; pointer-events: none; }
+        #drop-zone.active { display: flex; }
+
+        /* ICONOS SVG */
+        .svg-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* REDISEÑO MODAL LOGIN */
+        .auth-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .auth-header h2 { margin: 0 !important; border-bottom: none !important; padding: 0 !important; display: flex; align-items: center; gap: 8px; font-size: 16px;}
+        .close-btn-modern { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .close-btn-modern:hover { background: rgba(209, 52, 56, 0.15); color: #d13438; }
+        
+        .auth-tabs-modern { display: flex; background-color: var(--bg-dark); border-radius: 6px; padding: 4px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);}
+        .auth-tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 8px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .auth-tab-btn.active { background-color: var(--bg-panel); color: var(--text-bright); box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid var(--border); }
+        
+        .auth-inputs .input-dark { padding: 12px 10px; font-size: 13px; border-radius: 6px; margin-bottom: 12px; transition: 0.3s; background-color: rgba(0,0,0,0.2); }
+        .auth-inputs .input-dark:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.2); background-color: var(--bg-dark); }
+        
+        .btn-auth-modern { background: linear-gradient(180deg, var(--accent), #005f9e); border-top: 1px solid #3399ff; padding: 12px; font-size: 13px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); letter-spacing: 0.5px; margin-top: 5px; }
+        .btn-auth-modern:hover { background: linear-gradient(180deg, #0088dd, #006bb3); box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4); }
+    </style>
+</head>
+<body onload="initTheme()">
+
+    <!-- INPUTS OCULTOS -->
+    <input type="file" id="file-upload" multiple style="display:none" onchange="handleFileUpload(event)">
+    <input type="file" id="folder-upload" webkitdirectory directory multiple style="display:none" onchange="handleFolderUpload(event)">
+
+    <header>
+        <!-- LADO IZQUIERDO -->
+        <div class="header-left">
+            <div class="logo">
+                <button onclick="toggleSidebarPin()" id="btn-pin-sidebar" title="Desfijar Menú (Shift+M)">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                Slapy
+            </div>
+            
+            <div style="width: 1px; height: 15px; background-color: var(--border); margin: 0 5px;"></div>
+            
+            <div class="view-controls">
+                <button onclick="toggleTheme()" title="Cambiar Tema (Claro/Oscuro)">
+                    <svg class="svg-icon" id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line></svg>
+                    <svg class="svg-icon" id="icon-moon" viewBox="0 0 24 24" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <button onclick="changeFontSize(-1)" title="Achicar Letra">A-</button>
+                <button onclick="changeFontSize(1)" title="Agrandar Letra">A+</button>
+            </div>
+            
+            <button class="btn" id="btn-search-main" onclick="toggleSearch()" title="Buscar y Reemplazar (Ctrl+F)">Buscar</button>
+            <button class="btn" id="btn-split-toggle" onclick="toggleSplitMode()" title="Separar CSS y JS del HTML">Split</button>
+            <button class="btn" style="font-size: 16px; padding: 2px 10px;" onclick="openLocalHistoryModal()" title="Máquina del Tiempo Local (Deshacer)">⟲</button>
+        </div>
+
+        <!-- CENTRO -->
+        <div class="header-center">
+            <div class="view-controls">
+                <button id="btn-view-code" onclick="setLayout('code')" title="Solo Código (Alt + 1)">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                </button>
+                <button id="btn-view-split" class="active" onclick="setLayout('split')" title="Pantalla Dividida (Alt + 2)">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>
+                </button>
+                <button id="btn-view-preview" onclick="setLayout('preview')" title="Solo Visualizador (Alt + 3)">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- LADO DERECHO -->
+        <div class="header-right">
+            <button class="btn" style="background:var(--accent); color:white; border-color:var(--accent);" onclick="runCode()" title="Ejecutar Código (Ctrl+S)">
+                <svg class="svg-icon" viewBox="0 0 24 24" style="fill: currentColor; stroke: none;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Ejecutar
+            </button>
+        </div>
+    </header>
+
+    <div class="workspace" id="workspace-area">
+        
+        <div id="drop-zone">
+            <svg class="svg-icon" style="width:40px; height:40px; margin-bottom:10px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Suelta los archivos aquí para subirlos al proyecto activo
+        </div>
+
+        <!-- EXPLORADOR LATERAL -->
+        <div class="sidebar" id="sidebar">
+            <div class="side-header">
+                <span>Proyectos</span>
+                <div class="side-actions">
+                    <button onclick="document.getElementById('folder-upload').click()" title="Subir Carpeta desde PC">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><polyline points="9 14 12 11 15 14"></polyline></svg>
+                    </button>
+                    <button onclick="document.getElementById('file-upload').click()" title="Subir Archivo(s) desde PC">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="12" x2="12" y2="18"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+                    </button>
+                    <button onclick="downloadAllPortafolios()" title="Descargar Todo (Backup Local)">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>
+                    <div style="width: 1px; height: 14px; background-color: var(--border); margin: 0 2px;"></div>
+                    <button onclick="createPortafolio()" title="Crear Proyecto Vacío">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                    </button>
+                    <button onclick="createFile()" title="Crear Archivo Vacío">
+                        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="tree" id="explorer-tree"></div>
+
+            <!-- FOOTER: INFO, AUTENTICACIÓN Y NUBE -->
+            <div class="sidebar-footer">
+                <div class="global-info">
+                    <button onclick="openInfoModal()"><svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> Atajos e Información</button>
+                </div>
+
+                <div id="auth-ui-logged-out">
+                    <button class="login-btn" onclick="openLoginModal()">Iniciar Sesión</button>
+                </div>
+                
+                <div id="auth-ui-logged-in" style="display: none;" class="auth-container">
+                    <div class="user-info" onclick="openAccountModal()" title="Configuración de Cuenta">
+                        <div class="user-avatar" id="avatar-letter">U</div>
+                        <span id="sidebar-user-display" style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Usuario</span>
+                        <svg class="svg-icon" viewBox="0 0 24 24" style="width:12px; height:12px; opacity:0.6;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </div>
+                    <div class="user-actions">
+                        <button class="refresh-icon" onclick="forceSyncCloud()" title="Sincronizar Proyectos">
+                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+                        </button>
+                        <button class="cloud-icon" onclick="openCloudModal()" title="Gestión de Nube (Shift + L)">
+                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>
+                        </button>
+                        <button class="logout-icon" onclick="logoutCustom()" title="Cerrar Sesión">
+                            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÁREA CENTRAL -->
+        <div class="main-area">
+            
+            <div class="empty-workspace" id="empty-workspace">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                <p>Selecciona un archivo en el explorador para comenzar a editar.</p>
+            </div>
+
+            <div class="tabs-bar" id="tabs-container"></div>
+
+            <div class="panels-container">
+                <div class="editor-section flex-half" id="editor-section">
+                    
+                    <div class="editor-search-panel" id="editor-search-panel">
+                        <div class="search-row">
+                            <input type="text" id="live-search-input" placeholder="Buscar (Desde)..." oninput="updateSearch(true)">
+                            <input type="text" id="live-search-end" placeholder="Hasta (Ej. })..." style="display:none;" oninput="updateSearch(true)">
+                            <button class="btn-toggle-block" id="btn-block-search" onclick="toggleBlockSearch()" title="Modo Fragmento (Desde -> Hasta)">[..]</button>
+                            <span class="info" id="search-count">0/0</span>
+                            <button onclick="prevMatch()" title="Anterior">↑</button>
+                            <button onclick="nextMatch()" title="Siguiente">↓</button>
+                            <button onclick="toggleSearch()" title="Cerrar">✖</button>
+                        </div>
+                        <div class="search-row" id="replace-row">
+                            <input type="text" id="live-replace-input" placeholder="Reemplazar por...">
+                            <button class="replace-btn" onclick="doReplace()">Reemplazar</button>
+                            <button class="replace-btn" onclick="doReplaceAll()">Todo</button>
+                        </div>
+                    </div>
+
+                    <textarea id="main-editor"></textarea>
+                </div>
+                
+                <div class="preview-section flex-half" id="preview-section">
+                    <div id="iframe-wrapper"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICACIÓN FLOTANTE -->
+    <div id="toast" class="toast">Mensaje</div>
+
+    <!-- MODAL DE AUTENTICACIÓN REDISEÑADO -->
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal-box" style="width: 360px;">
+            
+            <div class="auth-header">
+                <h2>
+                    <svg class="svg-icon" style="width:20px; height:20px; color:var(--accent);" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    Cuenta Slapy
+                </h2>
+                <button class="close-btn-modern" onclick="closeLoginModal()" title="Cerrar">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            
+            <div class="auth-tabs-modern">
+                <button class="auth-tab-btn active" onclick="switchAuthTab('login')" id="tab-login">Iniciar Sesión</button>
+                <button class="auth-tab-btn" onclick="switchAuthTab('register')" id="tab-register">Crear Cuenta</button>
+            </div>
+
+            <div class="auth-inputs">
+                <input type="email" id="email-input" class="input-dark" placeholder="Correo electrónico" onkeydown="checkEnterLogin(event)">
+                <input type="password" id="pass-input" class="input-dark" placeholder="Contraseña (mínimo 6 caracteres)" onkeydown="checkEnterLogin(event)">
+            </div>
+            
+            <button id="auth-action-btn" class="btn-primary btn-auth-modern" onclick="doAuthAction()">Entrar</button>
+            
+            <div id="auth-error" style="color: #d13438; font-size: 11px; text-align: center; margin-top: 10px; min-height: 15px; font-weight: bold;"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="account-modal">
+        <div class="modal-box" style="width: 300px;">
+            <button class="close-modal" onclick="closeAccountModal()">✖</button>
+            <h2>Configuración</h2>
+            <input type="text" id="acc-name" class="input-dark" placeholder="Tu Nombre o Apodo">
+            <input type="password" id="acc-pass" class="input-dark" placeholder="Nueva Contraseña (Opcional)">
+            <button class="btn-primary" onclick="updateAccount()">Guardar Cambios</button>
+            
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 15px 0; width: 100%;">
+            <button class="btn-primary" style="background-color: transparent; border: 1px solid #d13438; color: #d13438;" onclick="freeMemory()" title="Limpia la caché y recarga la app para acelerarla">🧹 Liberar Memoria RAM</button>
+            
+            <div id="acc-msg" style="color: var(--accent); font-size: 11px; text-align: center; margin-top: 5px;"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="cloud-modal">
+        <div class="modal-box" style="width: 450px; height: 500px;">
+            <button class="close-modal" onclick="closeCloudModal()">✖</button>
+            <h2 id="cloud-modal-title" style="color:var(--accent);">Nube</h2>
+            
+            <div style="display:flex; gap:10px; margin-bottom:15px; flex-shrink: 0;">
+                <button class="btn info-tab active" onclick="switchCloudTab('save')" id="tab-cloud-save">Guardar Versión</button>
+                <button class="btn info-tab" onclick="switchCloudTab('history')" id="tab-cloud-hist">Historial</button>
+            </div>
+            
+            <div id="cloud-save-section" class="info-content active">
+                <input type="text" id="commit-title" class="input-dark" placeholder="Título o Versión (Ej. v1.0.0.0)">
+                <textarea id="commit-desc" class="input-dark" placeholder="Descripción detallada de lo que hiciste..."></textarea>
+                <button class="btn-primary" style="margin-top: 5px;" onclick="saveCommit()">☁️ Subir a la Nube</button>
+            </div>
+
+            <div id="cloud-hist-section" class="info-content">
+                <div class="history-list" id="history-list-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="local-history-modal">
+        <div class="modal-box" style="width: 400px; height: 500px;">
+            <button class="close-modal" onclick="closeLocalHistoryModal()">✖</button>
+            <h2 style="margin-bottom: 5px;">Línea de Tiempo Local</h2>
+            <p id="local-history-file-name" style="font-size: 12px; color: var(--accent); margin-top: 0; margin-bottom: 15px; font-weight: bold;"></p>
+            <div class="history-list timeline" id="local-history-list"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="info-modal">
+        <div class="modal-box" style="width: 420px;">
+            <button class="close-modal" onclick="closeInfoModal()">✖</button>
+            <h2>Información</h2>
+            
+            <div style="display:flex; gap:5px; margin-bottom:15px;">
+                <button class="btn info-tab active" onclick="switchInfo('win')" id="tab-win">Windows</button>
+                <button class="btn info-tab" onclick="switchInfo('mac')" id="tab-mac">Mac OS</button>
+                <button class="btn info-tab" onclick="switchInfo('prompt')" id="tab-prompt">Prompt IA</button>
+            </div>
+            
+            <div id="info-win" class="info-content active">
+                <p><b>Ctrl + S</b> <span>Ejecutar HTML actual con sus divisiones</span></p>
+                <p><b>Ctrl + F</b> <span>Abrir buscador inteligente</span></p>
+                <p><b>Alt + 0</b> <span>Modo Pantalla Completa (Zen)</span></p>
+                <p><b>Alt + 1, 2, 3</b> <span>Cambiar estructura de pantalla</span></p>
+                <p><b>Shift + M</b> <span>Ocultar/Mostrar barra lateral</span></p>
+                <p><b>Shift + L</b> <span>Gestión Nube (Guardar/Historial)</span></p>
+            </div>
+            
+            <div id="info-mac" class="info-content">
+                <p><b>Cmd ⌘ + S</b> <span>Ejecutar HTML actual con sus divisiones</span></p>
+                <p><b>Cmd ⌘ + F</b> <span>Abrir buscador inteligente</span></p>
+                <p><b>Alt ⌥ + 0</b> <span>Modo Pantalla Completa (Zen)</span></p>
+                <p><b>Alt ⌥ + 1, 2, 3</b> <span>Cambiar estructura de pantalla</span></p>
+                <p><b>Shift ⇧ + M</b> <span>Ocultar/Mostrar barra lateral</span></p>
+                <p><b>Shift ⇧ + L</b> <span>Gestión Nube (Guardar/Historial)</span></p>
+            </div>
+
+            <div id="info-prompt" class="info-content">
+                <p style="color:var(--text-bright); font-size:12px; border:none; margin-bottom: 5px;">Copia este prompt y dáselo a la IA cuando quieras generar o editar código para que Slapy detecte la versión automáticamente:</p>
+                <textarea id="prompt-text" class="input-dark" style="height:140px; font-family:monospace; font-size:11px; margin-bottom:10px; resize:none;" readonly>
+Actúa como un desarrollador experto. Al generar o modificar el código, debes incluir SIEMPRE al principio del archivo principal el siguiente bloque exacto, incrementando la versión (formato x.x.x.x) y detallando los cambios:
+
+<!--
+[SLAPY-VERSION: 1.0.0.0]
+[SLAPY-DESC: Descripción de los cambios realizados en esta versión]
+-->
+                </textarea>
+                <button class="btn-primary" onclick="copyPrompt()">Copiar Prompt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS CORE DE LA APLICACIÓN -->
+    <script>
+        function saveLocalState() { 
+            if(typeof localforage !== 'undefined') {
+                localforage.setItem('slapy_state_v34', appState).catch(function(err) {
+                    console.error("Error en IndexedDB:", err);
+                });
+            }
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function initTheme() {
+            if(localStorage.getItem('slapy_theme') === 'light') {
+                document.body.classList.add('light-mode');
+                var s = document.getElementById('icon-sun'); if(s) s.style.display = 'none';
+                var m = document.getElementById('icon-moon'); if(m) m.style.display = 'block';
+            }
+        }
+        function toggleTheme() {
+            var isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('slapy_theme', isLight ? 'light' : 'dark');
+            var iconSun = document.getElementById('icon-sun');
+            var iconMoon = document.getElementById('icon-moon');
+            if(isLight) {
+                if(iconSun) iconSun.style.display = 'none';
+                if(iconMoon) iconMoon.style.display = 'block';
+                if(editor) editor.setOption('theme', 'default');
+            } else {
+                if(iconSun) iconSun.style.display = 'block';
+                if(iconMoon) iconMoon.style.display = 'none';
+                if(editor) editor.setOption('theme', 'monokai');
+            }
+        }
+
+        window.onerror = function(msg, url, line) {
+            if (msg === "Script error." || line === 0) return false;
+            console.error("Slapy Error (Línea " + line + "): " + msg);
+            return false;
+        };
+
+        var db = null;
+        try {
+            if (typeof firebase !== 'undefined') {
+                var firebaseConfig = {
+                    apiKey: "AIzaSyDyyWwKKx1bgwObtFlZIgbPXUyQp3gKeKI",
+                    authDomain: "visualcodepersonal.firebaseapp.com",
+                    projectId: "visualcodepersonal",
+                    storageBucket: "visualcodepersonal.firebasestorage.app"
+                };
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+            }
+        } catch(e) { console.warn("Firebase offline:", e); }
+        
+        var currentUserCustom = localStorage.getItem('slapy_logged_user') || localStorage.getItem('cs_logged_user') || ""; 
+        var currentDisplayName = localStorage.getItem('slapy_display_name') || localStorage.getItem('cs_display_name') || currentUserCustom; 
+        
+        var isSyncing = false; 
+        var isSplitMode = false;
+        var globalCommits = {}; 
+        var editorFontSize = 14;
+        var debounceHistory;
+
+        var appState = { portafolios: {}, activePortafolio: null, activeFile: null };
+
+        function showToast(msg) {
+            var toast = document.getElementById('toast');
+            if(toast) { toast.innerText = msg; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
+        }
+
+        function checkEmptyState() {
+            var empty = document.getElementById('empty-workspace');
+            if(empty) {
+                if(!appState.activePortafolio || !appState.activeFile) empty.style.display = 'flex';
+                else empty.style.display = 'none';
+            }
+        }
+
+        var editor = null;
+        try {
+            if (typeof CodeMirror !== 'undefined') {
+                var txtArea = document.getElementById('main-editor');
+                if(txtArea) {
+                    var currentTheme = document.body.classList.contains('light-mode') ? 'default' : 'monokai';
+                    editor = CodeMirror.fromTextArea(txtArea, {
+                        theme: currentTheme, lineNumbers: true, tabSize: 4, indentUnit: 4, lineWrapping: true, mode: 'htmlmixed'
+                    });
+
+                    editor.on('change', function(cm, changeObj) {
+                        if(isSyncing || !appState.activePortafolio || !appState.activeFile) return;
+                        
+                        var currentPort = appState.portafolios[appState.activePortafolio];
+                        if(currentPort && currentPort.files) {
+                            currentPort.files[appState.activeFile] = editor.getValue();
+                        }
+                        
+                        var pnl = document.getElementById('editor-search-panel');
+                        if(pnl && pnl.classList.contains('active')) updateSearch(false);
+                        
+                        if (changeObj.origin !== 'setValue' && changeObj.origin !== 'undo' && changeObj.origin !== 'redo') {
+                            clearTimeout(debounceHistory);
+                            debounceHistory = setTimeout(function() {
+                                var action = "Edición manual";
+                                if (changeObj.origin === 'paste') action = "Texto pegado";
+                                else if (changeObj.origin === '+delete') action = "Texto borrado";
+                                else if (changeObj.origin === 'replace') action = "Palabra reemplazada";
+                                pushLocalHistory(action);
+                            }, 3000);
+                        }
+                        saveLocalState();
+                    });
+                }
+            }
+        } catch(e) { console.error("Error al inicializar CodeMirror:", e); }
+
+        var dmp = new diff_match_patch();
+
+        // Función mágica que reconstruye el código a partir de puros parches
+        function getFullCodeAt(historyArr, index) {
+            if (!historyArr || historyArr.length === 0) return "";
+            if (historyArr[index].code !== undefined && !historyArr[index].patch) return historyArr[index].code; // Soporte para historiales viejos
+            
+            var text = historyArr[0].code || "";
+            for (var i = 1; i <= index; i++) {
+                if (historyArr[i].code !== undefined && !historyArr[i].patch) {
+                    text = historyArr[i].code;
+                } else if(historyArr[i].patch) {
+                    var patches = dmp.patch_fromText(historyArr[i].patch);
+                    text = dmp.patch_apply(patches, text)[0];
+                }
+            }
+            return text;
+        }
+
+        function pushLocalHistory(desc) {
+            if(!appState.activePortafolio || !appState.activeFile || !editor) return;
+            var currentPort = appState.portafolios[appState.activePortafolio];
+            if(!currentPort) return;
+            if (!currentPort.localHistory) currentPort.localHistory = {};
+            if (!currentPort.localHistory[appState.activeFile]) currentPort.localHistory[appState.activeFile] = [];
+            
+            var arr = currentPort.localHistory[appState.activeFile];
+            var currentCode = editor.getValue();
+            
+            // Si es el primer guardado, obligatoriamente guardamos el código base completo
+            if (arr.length === 0) {
+                arr.push({ time: new Date().toLocaleTimeString(), desc: desc, code: currentCode, base: true });
+                saveLocalState();
+                return;
+            }
+
+            var lastCode = getFullCodeAt(arr, arr.length - 1);
+            if (lastCode !== currentCode) {
+                // Generar las diferencias
+                var diff = dmp.diff_main(lastCode, currentCode, true);
+                if (diff.length > 2) dmp.diff_cleanupSemantic(diff);
+                
+                // Crear el parche comprimido
+                var patch_list = dmp.patch_make(lastCode, currentCode, diff);
+                var patch_text = dmp.patch_toText(patch_list);
+
+                if(patch_text.trim() === "") return; // Si no hay cambios reales, no guardamos
+
+                arr.push({ time: new Date().toLocaleTimeString(), desc: desc, patch: patch_text });
+                
+                // Gracias a la compresión, ahora podemos guardar hasta 50 cambios sin sufrir
+                if (arr.length > 50) {
+                    var newBase = getFullCodeAt(arr, 1);
+                    arr[1] = { time: arr[1].time, desc: arr[1].desc, code: newBase, base: true };
+                    arr.shift();
+                }
+                saveLocalState();
+                showToast("⏱️ Historial guardado: " + desc); // <-- AVISO VISUAL
+            }
+        }
+
+        function changeFontSize(dir) {
+            editorFontSize += (dir * 2);
+            if (editorFontSize < 8) editorFontSize = 8;
+            if (editorFontSize > 36) editorFontSize = 36;
+            var cmElements = document.getElementsByClassName('CodeMirror');
+            for(var i=0; i<cmElements.length; i++) cmElements[i].style.fontSize = editorFontSize + 'px';
+            if(editor) editor.refresh();
+            localStorage.setItem('slapy_fontsize', editorFontSize);
+        }
+        if(localStorage.getItem('slapy_fontsize')) {
+            editorFontSize = parseInt(localStorage.getItem('slapy_fontsize')); changeFontSize(0);
+        }
+
+        function handleFileUpload(event) {
+            var pName = appState.activePortafolio;
+            if(!pName) { showToast("Abre o crea un proyecto primero."); return; }
+            var files = event.target.files;
+            if(files.length === 0) return;
+            
+            var filesRead = 0;
+            for(let i=0; i<files.length; i++) {
+                let f = files[i];
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    if(!appState.portafolios[pName].files) appState.portafolios[pName].files = {};
+                    appState.portafolios[pName].files[f.name] = e.target.result;
+                    filesRead++;
+                    
+                    if(filesRead === files.length) { 
+                        appState.portafolios[pName].isOpen = true; // Auto-expande la carpeta
+                        appState.portafolios[pName].isGhost = false; // Quita el modo fantasma si lo tuviera
+                        saveLocalState(); 
+                        renderExplorer(); 
+                        openFile(pName, f.name); 
+                        showToast("✔ Archivo(s) Subido(s)"); 
+                    }
+                };
+                if(f.type.startsWith('image/')) reader.readAsDataURL(f);
+                else reader.readAsText(f);
+            }
+            event.target.value = ''; 
+        }
+
+        function handleFolderUpload(event) {
+            var files = event.target.files;
+            if(files.length === 0) return;
+            var folderName = files[0].webkitRelativePath.split('/')[0] || "Proyecto Importado";
+            
+            for(var p in appState.portafolios) { if(appState.portafolios[p]) appState.portafolios[p].isOpen = false; }
+            if(!appState.portafolios[folderName]) appState.portafolios[folderName] = { isOpen: true, files: {}, openTabs: [], localHistory: {}, splitMap: {}, splitMeta: {} };
+            else appState.portafolios[folderName].isOpen = true;
+            
+            var filesRead = 0;
+            for(let i=0; i<files.length; i++) {
+                let f = files[i];
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    if(!appState.portafolios[folderName].files) appState.portafolios[folderName].files = {};
+                    appState.portafolios[folderName].files[f.name] = e.target.result;
+                    filesRead++;
+                    
+                    if(filesRead === files.length) {
+                        activatePortafolio(folderName);
+                        saveLocalState(); 
+                        renderExplorer(); 
+                        showToast("✔ Carpeta Importada: " + folderName);
+                    }
+                };
+                if(f.type.startsWith('image/')) reader.readAsDataURL(f);
+                else reader.readAsText(f);
+            }
+            event.target.value = '';
+        }
+
+        var wsArea = document.getElementById('workspace-area');
+        var dropZone = document.getElementById('drop-zone');
+        if(wsArea && dropZone) {
+            wsArea.addEventListener('dragover', function(e) { e.preventDefault(); e.stopPropagation(); if(appState.activePortafolio) dropZone.classList.add('active'); });
+            wsArea.addEventListener('dragleave', function(e) { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('active'); });
+            wsArea.addEventListener('drop', function(e) {
+                e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('active');
+                var pName = appState.activePortafolio; if(!pName) return;
+                if(e.dataTransfer.items) {
+                    var items = e.dataTransfer.items;
+                    var filesToRead = [];
+                    for(var i=0; i<items.length; i++) {
+                        if(items[i].kind === 'file') filesToRead.push(items[i].getAsFile());
+                    }
+                    var filesRead = 0;
+                    if(filesToRead.length === 0) return;
+                    
+                    for(var i=0; i<filesToRead.length; i++) {
+                        let file = filesToRead[i];
+                        let reader = new FileReader();
+                        reader.onload = (function(fName) {
+                            return function(evt) {
+                                if(!appState.portafolios[pName].files) appState.portafolios[pName].files = {};
+                                appState.portafolios[pName].files[fName] = evt.target.result;
+                                filesRead++;
+                                
+                                if(filesRead === filesToRead.length) {
+                                    appState.portafolios[pName].isOpen = true; // Auto-expande la carpeta
+                                    appState.portafolios[pName].isGhost = false;
+                                    saveLocalState(); 
+                                    renderExplorer(); 
+                                    openFile(pName, fName);
+                                    showToast("✔ Archivos agregados");
+                                }
+                            }
+                        })(file.name);
+                        if(file.type.startsWith('image/')) reader.readAsDataURL(file);
+                        else reader.readAsText(file);
+                    }
+                }
+            });
+        }
+
+        function downloadSingleFile(pName, fName, e) {
+            e.stopPropagation();
+            var content = (appState.portafolios[pName].files && appState.portafolios[pName].files[fName]) || "";
+            var link = document.createElement("a");
+            if(content.startsWith('data:image/')) link.href = content;
+            else link.href = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
+            link.download = fName; link.click(); showToast("Descargando archivo...");
+        }
+
+        function downloadPortafolio(pName, e) {
+            e.stopPropagation();
+            var zip = new JSZip();
+            var files = appState.portafolios[pName].files || {};
+            for(var f in files) {
+                var content = files[f];
+                if(content.startsWith('data:image/')) zip.file(f, content.split(',')[1], {base64: true});
+                else zip.file(f, content);
+            }
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                var link = document.createElement("a"); link.href = URL.createObjectURL(content); link.download = pName + ".zip"; link.click(); showToast("Descargando proyecto .zip");
+            });
+        }
+
+        function downloadAllPortafolios() {
+            if(!appState.portafolios || Object.keys(appState.portafolios).length === 0) { showToast("No hay proyectos para descargar."); return; }
+            var zip = new JSZip();
+            for(var pName in appState.portafolios) {
+                var folder = zip.folder(pName); var files = appState.portafolios[pName].files || {};
+                for(var f in files) {
+                    var content = files[f];
+                    if(content.startsWith('data:image/')) folder.file(f, content.split(',')[1], {base64: true});
+                    else folder.file(f, content);
+                }
+            }
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                var link = document.createElement("a"); link.href = URL.createObjectURL(content); link.download = "Slapy_Backup.zip"; link.click(); showToast("Backup completo descargado");
+            });
+        }
+
+        function renderExplorer() {
+            try {
+                var container = document.getElementById('explorer-tree');
+                if(!container) return;
+                if (!appState.portafolios || Object.keys(appState.portafolios).length === 0) {
+                    container.innerHTML = '<div style="color:var(--text-muted); font-size:12px; text-align:center; margin-top:20px;">Sin proyectos.</div>';
+                    renderTabs(); return;
+                }
+
+                var html = "";
+                // NUEVOS ICONOS DINÁMICOS DE CARPETA Y FAVORITOS
+                var svgFolderGhost = "<svg class='svg-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'></path></svg>";
+                var svgFolderLocal = "<svg class='svg-icon' viewBox='0 0 24 24' fill='currentColor' stroke='none'><path d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'></path></svg>";
+                var svgFile = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'></path><polyline points='14 2 14 8 20 8'></polyline></svg>";
+                var svgPencil = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M12 20h9'></path><path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'></path></svg>";
+                var svgTrash = "<svg class='svg-icon' viewBox='0 0 24 24'><polyline points='3 6 5 6 21 6'></polyline><path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'></path></svg>";
+                var svgDownload = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'></path><polyline points='7 10 12 15 17 10'></polyline><line x1='12' y1='15' x2='12' y2='3'></line></svg>";
+                var svgPush = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M12 19V5'></path><polyline points='5 12 12 5 19 12'></polyline></svg>";
+                var svgGet = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M12 5v14'></path><polyline points='19 12 12 19 5 12'></polyline></svg>";
+                var svgStar = "<svg class='svg-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'></polygon></svg>";
+                var svgStarFilled = "<svg class='svg-icon' viewBox='0 0 24 24' fill='#e2b93b' stroke='#e2b93b' stroke-width='2'><polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'></polygon></svg>";
+                var svgCloudSection = "<svg class='svg-icon' viewBox='0 0 24 24' style='width:12px; height:12px;'><path d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'></path></svg>";
+
+                var favorites = [];
+                var locals = [];
+                var clouds = [];
+
+                // Categorizar los proyectos
+                for (var pName in appState.portafolios) {
+                    var pData = appState.portafolios[pName];
+                    if(!pData) continue;
+                    if(pData.isFavorite) favorites.push(pName);
+                    else if(pData.isGhost) clouds.push(pName);
+                    else locals.push(pName);
+                }
+
+                // Orden alfabético
+                var sortAlpha = function(a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); };
+                favorites.sort(sortAlpha);
+                locals.sort(sortAlpha);
+                clouds.sort(sortAlpha);
+
+                // Función auxiliar para dibujar carpetas y evitar repetir código
+                function buildFolderHTML(list) {
+                    var out = "";
+                    list.forEach(function(pName) {
+                        var pData = appState.portafolios[pName];
+                        var folderHiddenClass = pData.isOpen ? "" : "hidden";
+                        var isActiveFolder = (appState.activePortafolio === pName) ? "active-folder" : "";
+                        var safePName = escapeRegExp(pName);
+                        
+                        var folderIcon = pData.isGhost 
+                            ? "<span title='Proyecto en la Nube (Vacío)' style='display:flex; color:var(--text-muted);'>" + svgFolderGhost + "</span>" 
+                            : "<span onclick='offloadProject(\"" + safePName + "\", event)' onmouseover='this.style.color=\"#d13438\"' onmouseout='this.style.color=\"var(--accent)\"' title='Clic para ELIMINAR descarga y liberar espacio' style='display:flex; color:var(--accent); cursor:pointer; transition:0.2s;'>" + svgFolderLocal + "</span>";
+                            
+                        var starBtn = pData.isFavorite ? "<button onclick='toggleFavorite(\"" + safePName + "\", event)' title='Quitar de Favoritos'>" + svgStarFilled + "</button>" : "<button onclick='toggleFavorite(\"" + safePName + "\", event)' title='Añadir a Favoritos'>" + svgStar + "</button>";
+                        
+                        out += "<div>";
+                        out += "  <div class='folder-row " + isActiveFolder + "' onclick='toggleFolder(\"" + safePName + "\")'>";
+                        out += "    <span class='folder-name' style='gap:4px;'>" + folderIcon + " <span style='margin-left:4px;'>" + pName + "</span></span>";
+                        out += "    <div class='actions'>";
+                        out += starBtn;
+                        out += "      <button onclick='pushProject(\"" + safePName + "\", event)' title='Push a la Nube' style='color:#28a745;'>" + svgPush + "</button>";
+                        out += "      <button onclick='getProject(\"" + safePName + "\", event)' title='Get desde la Nube' style='color:#007acc;'>" + svgGet + "</button>";
+                        out += "      <button onclick='downloadPortafolio(\"" + safePName + "\", event)' title='Descargar .zip'>" + svgDownload + "</button>";
+                        out += "      <button onclick='renamePortafolio(\"" + safePName + "\", event)' title='Renombrar'>" + svgPencil + "</button>";
+                        out += "      <button class='del' onclick='deletePortafolio(\"" + safePName + "\", event)' title='Eliminar'>" + svgTrash + "</button>";
+                        out += "    </div>";
+                        out += "  </div>";
+                        
+                        out += "<div class='file-list " + folderHiddenClass + "'>";
+                        
+                        var splitMap = pData.splitMap || {};
+                        var allSplitChildren = [];
+                        Object.keys(splitMap).forEach(function(k) { 
+                            if(Array.isArray(splitMap[k])) {
+                                allSplitChildren = allSplitChildren.concat(splitMap[k]); 
+                            }
+                        });
+
+                        var filesObj = pData.files || {};
+                        for(var fName in filesObj) {
+                            if(allSplitChildren.includes(fName)) continue; 
+
+                            var safeFName = escapeRegExp(fName);
+                            var isAct = (appState.activePortafolio === pName && appState.activeFile === fName) ? "active" : "";
+                            
+                            out += "<div class='file-row " + isAct + "' onclick='openFile(\"" + safePName + "\", \"" + safeFName + "\")'>";
+                            out += "  <span class='file-name' style='display:flex; align-items:center; gap:5px;'>" + svgFile + fName + "</span>";
+                            out += "  <div class='actions'>";
+                            out += "    <button onclick='downloadSingleFile(\"" + safePName + "\", \"" + safeFName + "\", event)' title='Descargar'>" + svgDownload + "</button>";
+                            out += "    <button onclick='renameFile(\"" + safePName + "\", \"" + safeFName + "\", event)' title='Renombrar'>" + svgPencil + "</button>";
+                            out += "    <button class='del' onclick='deleteFile(\"" + safePName + "\", \"" + safeFName + "\", event)' title='Eliminar'>" + svgTrash + "</button>";
+                            out += "  </div>";
+                            out += "</div>";
+
+                            if(Array.isArray(splitMap[fName]) && splitMap[fName].length > 0) {
+                                splitMap[fName].forEach(function(childFile) {
+                                    if(!filesObj[childFile]) return;
+                                    var safeChildFile = escapeRegExp(childFile);
+                                    var isChildAct = (appState.activePortafolio === pName && appState.activeFile === childFile) ? "active" : "";
+                                    out += "<div class='file-row split-child " + isChildAct + "' onclick='openFile(\"" + safePName + "\", \"" + safeChildFile + "\")'>";
+                                    out += "  <span class='file-name'>↳ " + childFile + "</span>";
+                                    out += "  <div class='actions'>";
+                                    out += "    <button onclick='downloadSingleFile(\"" + safePName + "\", \"" + safeChildFile + "\", event)' title='Descargar'>" + svgDownload + "</button>";
+                                    out += "  </div>";
+                                    out += "</div>";
+                                });
+                            }
+                        }
+                        out += "</div></div>";
+                    });
+                    return out;
+                }
+
+                // Ensamblar las 3 secciones
+                if(favorites.length > 0) {
+                    html += "<div style='padding: 10px 15px 5px; font-size: 10px; color: #e2b93b; font-weight: bold; letter-spacing: 1px;'>★ FAVORITOS</div>";
+                    html += buildFolderHTML(favorites);
+                }
+                if(locals.length > 0) {
+                    html += "<div style='padding: 10px 15px 5px; font-size: 10px; color: var(--text-muted); font-weight: bold; letter-spacing: 1px;'>LOCALES</div>";
+                    html += buildFolderHTML(locals);
+                }
+                if(clouds.length > 0) {
+                    html += "<div style='padding: 10px 15px 5px; font-size: 10px; color: var(--text-muted); font-weight: bold; letter-spacing: 1px; display:flex; align-items:center; gap:4px;'>" + svgCloudSection + " EN LA NUBE</div>";
+                    html += buildFolderHTML(clouds);
+                }
+
+                container.innerHTML = html;
+                renderTabs();
+            } catch(e) { console.error("Error en renderExplorer:", e); }
+        }
+        
+        function toggleFavorite(pName, e) {
+            e.stopPropagation();
+            if(!appState.portafolios[pName]) return;
+            appState.portafolios[pName].isFavorite = !appState.portafolios[pName].isFavorite;
+            saveLocalState();
+            renderExplorer();
+        }
+        
+        function toggleFolder(pName) {
+            if(!appState.portafolios[pName]) return;
+            var isOpening = !appState.portafolios[pName].isOpen;
+            for(var p in appState.portafolios) {
+                if(appState.portafolios[p]) appState.portafolios[p].isOpen = false;
+            }
+            if(isOpening) activatePortafolio(pName); 
+            else { saveLocalState(); renderExplorer(); }
+        }
+
+        function renamePortafolio(oldName, e) {
+            e.stopPropagation();
+            var newName = prompt("Renombrar proyecto:", oldName);
+            if(!newName || newName.trim() === "" || newName === oldName || appState.portafolios[newName]) return;
+            appState.portafolios[newName] = appState.portafolios[oldName];
+            delete appState.portafolios[oldName];
+            if(appState.activePortafolio === oldName) appState.activePortafolio = newName;
+            saveLocalState(); renderExplorer();
+        }
+
+        function renameFile(pName, oldName, e) {
+            e.stopPropagation();
+            var newName = prompt("Renombrar archivo:", oldName);
+            var pData = appState.portafolios[pName];
+            if(!pData || !newName || newName.trim() === "" || newName === oldName || (pData.files && pData.files[newName] !== undefined)) return;
+            
+            pData.files[newName] = pData.files[oldName];
+            
+            if(pData.localHistory && pData.localHistory[oldName]) {
+                pData.localHistory[newName] = pData.localHistory[oldName];
+                delete pData.localHistory[oldName];
+            }
+            if(pData.splitMap && pData.splitMap[oldName]) {
+                pData.splitMap[newName] = pData.splitMap[oldName];
+                delete pData.splitMap[oldName];
+            }
+            if(pData.splitMeta && pData.splitMeta[oldName]) {
+                pData.splitMeta[newName] = pData.splitMeta[oldName];
+                delete pData.splitMeta[oldName];
+            }
+            delete pData.files[oldName];
+            
+            var tabs = pData.openTabs || [];
+            var idx = tabs.indexOf(oldName);
+            if(idx > -1) tabs[idx] = newName;
+            if(appState.activePortafolio === pName && appState.activeFile === oldName) appState.activeFile = newName;
+            saveLocalState(); renderExplorer();
+        }
+
+        function deleteFile(pName, fName, e) {
+            e.stopPropagation();
+            var pData = appState.portafolios[pName];
+            if(!pData || !pData.files) return;
+            
+            if(confirm("¿Eliminar " + fName + "?")) {
+                if(pData.splitMap && Array.isArray(pData.splitMap[fName])) {
+                    pData.splitMap[fName].forEach(function(c) {
+                        delete pData.files[c]; removeTab(pName, c);
+                        if(pData.splitMeta) delete pData.splitMeta[c];
+                    });
+                    delete pData.splitMap[fName];
+                }
+                delete pData.files[fName];
+                if(pData.localHistory) delete pData.localHistory[fName];
+                if(pData.splitMeta) delete pData.splitMeta[fName];
+                removeTab(pName, fName);
+                if(appState.activePortafolio === pName && appState.activeFile === fName) {
+                    var tabs = pData.openTabs || [];
+                    if(tabs.length > 0) openFile(pName, tabs[tabs.length - 1]);
+                    else { appState.activeFile = null; if(editor) editor.setValue(""); checkEmptyState();}
+                }
+                saveLocalState(); renderExplorer();
+            }
+        }
+
+        function deletePortafolio(pName, e) {
+            e.stopPropagation();
+            if(confirm("¿Eliminar proyecto '" + pName + "' localmente?")) {
+                delete appState.portafolios[pName];
+                if(appState.activePortafolio === pName) { appState.activePortafolio = null; appState.activeFile = null; if(editor) editor.setValue(""); checkEmptyState();}
+                saveLocalState(); renderExplorer();
+            }
+        }
+
+        function renderTabs() {
+            var container = document.getElementById('tabs-container');
+            if(!container) return;
+            if(!appState.activePortafolio || !appState.portafolios[appState.activePortafolio]) { container.innerHTML = ""; return; }
+            var pData = appState.portafolios[appState.activePortafolio];
+            var html = "";
+            
+            var splitMap = pData.splitMap || {};
+            var allSplitChildren = [];
+            var allParents = [];
+            Object.keys(splitMap).forEach(function(parent) {
+                if(Array.isArray(splitMap[parent]) && splitMap[parent].length > 0) {
+                    allParents.push(parent);
+                    allSplitChildren = allSplitChildren.concat(splitMap[parent]);
+                }
+            });
+
+            var tabs = pData.openTabs || [];
+            tabs.forEach(function(fName) {
+                if(pData.files && pData.files[fName] !== undefined) {
+                    var isAct = (appState.activeFile === fName) ? "active" : "";
+                    var typeClass = "";
+                    if(allParents.includes(fName)) typeClass = isAct ? "tab-parent-active" : ""; 
+                    else if(allSplitChildren.includes(fName)) typeClass = "tab-child-text"; 
+
+                    var safePName = escapeRegExp(appState.activePortafolio);
+                    var safeFName = escapeRegExp(fName);
+
+                    html += "<div class='tab " + isAct + " " + typeClass + "' onclick='openFile(\"" + safePName + "\", \"" + safeFName + "\")'>";
+                    html += "  <span>" + fName + "</span>";
+                    html += "  <span class='tab-close' onclick='closeTab(\"" + safeFName + "\", event)'>×</span>";
+                    html += "</div>";
+                }
+            });
+            container.innerHTML = html;
+        }
+
+        function activatePortafolio(pName) {
+            if(!appState.portafolios[pName]) return;
+            appState.activePortafolio = pName;
+            appState.portafolios[pName].isOpen = true;
+            var pData = appState.portafolios[pName];
+            if(!pData.openTabs) pData.openTabs = [];
+            
+            if(pData.openTabs.length === 0 && Object.keys(pData.files || {}).length > 0) {
+                var firstFile = Object.keys(pData.files)[0];
+                pData.openTabs.push(firstFile); 
+                openFile(pName, firstFile);
+            } else if (pData.openTabs.length > 0) {
+                openFile(pName, pData.openTabs[pData.openTabs.length - 1]);
+            } else { 
+                appState.activeFile = null; 
+                if(editor) editor.setValue(""); 
+                renderExplorer(); 
+                checkEmptyState();
+            }
+        }
+
+        function openFile(pName, fName) {
+            if(!pName || !fName) return; 
+            var pData = appState.portafolios[pName];
+            if(!pData) return;
+            
+            // MAGIA: Si el proyecto es fantasma, bloqueamos silenciosamente sin alertas
+            if(pData.isGhost) {
+                return;
+            }
+
+            appState.activePortafolio = pName; appState.activeFile = fName;
+            if(!pData.openTabs) pData.openTabs = [];
+            if(!pData.openTabs.includes(fName)) pData.openTabs.push(fName);
+
+            isSyncing = true;
+            if(editor) {
+                editor.setValue((pData.files && pData.files[fName]) || "");
+                setTimeout(function() { editor.refresh(); }, 10);
+            }
+            
+            if(!pData.localHistory) pData.localHistory = {};
+            if(!pData.localHistory[fName] || !Array.isArray(pData.localHistory[fName]) || pData.localHistory[fName].length === 0) {
+                pData.localHistory[fName] = [{ time: new Date().toLocaleTimeString(), desc: "Apertura de archivo", code: (pData.files && pData.files[fName]) || "" }];
+            }
+
+            if(editor) {
+                var ext = fName.split('.').pop().toLowerCase();
+                if(ext === 'js' || ext === 'json') editor.setOption("mode", "javascript");
+                else if(ext === 'css') editor.setOption("mode", "css");
+                else if(ext === 'html') editor.setOption("mode", "htmlmixed");
+                else editor.setOption("mode", "text/plain");
+            }
+            
+            isSyncing = false; 
+            saveLocalState(); 
+            renderExplorer(); 
+            checkEmptyState();
+            
+            var splitMap = pData.splitMap || {};
+            var btnSplit = document.getElementById('btn-split-toggle');
+            if(btnSplit) {
+                var isParentSplit = Array.isArray(splitMap[fName]) && splitMap[fName].length > 0;
+                var isChildSplit = Object.keys(splitMap).some(function(k) { 
+                    return Array.isArray(splitMap[k]) && splitMap[k].includes(fName); 
+                });
+                var fileContent = (pData.files && pData.files[fName]) || "";
+                var hasSplitComments = /<!--\s*\[SLAPY-SPLIT:.*?\]\s*-->/i.test(fileContent);
+                
+                if(isParentSplit || isChildSplit || hasSplitComments) {
+                    btnSplit.classList.add("active-tool"); btnSplit.innerText = "Un-Split";
+                } else {
+                    btnSplit.classList.remove("active-tool"); btnSplit.innerText = "Split";
+                }
+            }
+
+            var searchPanel = document.getElementById('editor-search-panel');
+            if(searchPanel && searchPanel.classList.contains('active')) updateSearch(true);
+        }
+
+        function removeTab(pName, fName) {
+             if(!pName || !appState.portafolios[pName]) return;
+             var tabs = appState.portafolios[pName].openTabs || [];
+             var idx = tabs.indexOf(fName);
+             if(idx > -1) tabs.splice(idx, 1);
+        }
+
+        function closeTab(fName, e) {
+            e.stopPropagation();
+            var pName = appState.activePortafolio;
+            if(!pName || !appState.portafolios[pName]) return;
+            var tabs = appState.portafolios[pName].openTabs || [];
+            var idx = tabs.indexOf(fName);
+            if(idx > -1) tabs.splice(idx, 1);
+            
+            if(appState.activeFile === fName) {
+                if(tabs.length > 0) openFile(pName, tabs[tabs.length - 1]);
+                else { appState.activeFile = null; if(editor) editor.setValue(""); renderExplorer(); checkEmptyState();}
+            } else renderTabs();
+            saveLocalState();
+        }
+
+        function createPortafolio() {
+            var name = prompt("Nombre del Proyecto:");
+            if(name && name.trim() !== "") {
+                name = name.trim();
+                if(appState.portafolios[name]) return;
+                for(var p in appState.portafolios) { if(appState.portafolios[p]) appState.portafolios[p].isOpen = false; }
+                appState.portafolios[name] = { 
+                    isOpen: true, 
+                    files: { "index.html": "<!--\n[SLAPY-VERSION: 1.0.0.0]\n[SLAPY-DESC: Creación del proyecto " + name + "]\n-->\n<h1>Proyecto " + name + "</h1>" }, 
+                    openTabs: ["index.html"], localHistory: {}, splitMap: {}, splitMeta: {} 
+                };
+                activatePortafolio(name);
+            }
+        }
+        function createFile() {
+            var pName = appState.activePortafolio;
+            if(!pName || !appState.portafolios[pName]) return;
+            var fName = prompt("Nombre del archivo (Ej. styles.css, datos.json):");
+            if(fName && fName.trim() !== "") {
+                fName = fName.trim(); if(!fName.includes('.')) fName += ".js";
+                if(appState.portafolios[pName].files && appState.portafolios[pName].files[fName] !== undefined) return;
+                if(!appState.portafolios[pName].files) appState.portafolios[pName].files = {};
+                
+                appState.portafolios[pName].isOpen = true; // Auto-expande la carpeta
+                appState.portafolios[pName].isGhost = false;
+                
+                appState.portafolios[pName].files[fName] = ""; openFile(pName, fName);
+            }
+        }
+
+        // =========================================================
+        // MOTOR SPLIT MEJORADO (ATRIBUTOS + FALLBACK ESTRUCTURAL)
+        // =========================================================
+        function toggleSplitMode() {
+            var pName = appState.activePortafolio;
+            if(!pName || !appState.portafolios[pName]) return;
+            
+            if(editor && appState.activeFile) {
+                appState.portafolios[pName].files[appState.activeFile] = editor.getValue();
+            }
+
+            var htmlFileName = appState.activeFile;
+            var pData = appState.portafolios[pName];
+            if(!pData.splitMap) pData.splitMap = {};
+            if(!pData.splitMeta) pData.splitMeta = {}; // Diccionario para atributos
+            if(!pData.files) pData.files = {};
+
+            if(!htmlFileName || !htmlFileName.endsWith('.html')) {
+                var foundParent = Object.keys(pData.splitMap).find(function(h) { 
+                    return Array.isArray(pData.splitMap[h]) && pData.splitMap[h].includes(htmlFileName); 
+                });
+                if(foundParent) htmlFileName = foundParent;
+                else {
+                    for(var f in pData.files) { if(f.endsWith('.html')) { htmlFileName = f; break; } }
+                }
+            }
+            if(!htmlFileName || pData.files[htmlFileName] === undefined) { showToast("Abre un archivo HTML"); return; }
+
+            var splitChildren = pData.splitMap[htmlFileName] || [];
+            var htmlCode = pData.files[htmlFileName] || "";
+
+            if(!splitChildren || splitChildren.length === 0) {
+                var commentMatches = htmlCode.match(/<!--\s*\[SLAPY-SPLIT:(.*?)\]\s*-->/gi);
+                if(commentMatches && commentMatches.length > 0) {
+                    splitChildren = [];
+                    commentMatches.forEach(function(m) {
+                        var match = m.match(/<!--\s*\[SLAPY-SPLIT:(.*?)\]\s*-->/i);
+                        if(match && match[1]) splitChildren.push(match[1].trim());
+                    });
+                    pData.splitMap[htmlFileName] = splitChildren;
+                }
+            }
+
+            var btn = document.getElementById('btn-split-toggle');
+
+            if(splitChildren.length === 0) { 
+                var cssCount = 0, jsCount = 0, jsonCount = 0;
+                var newChildren = [];
+                var baseName = htmlFileName.replace('.html', '');
+                
+                // Extrae CSS capturando atributos (group 1)
+                var styleTagRegex = /<style([^>]*)>([\s\S]*?)<\/style>/gi;
+                htmlCode = htmlCode.replace(styleTagRegex, function(m, attrs, inner) {
+                    var contenido = inner.trim(); if(contenido === "") return m; 
+                    cssCount++; var fName = baseName + "-style" + (cssCount===1?"":cssCount) + ".css";
+                    pData.files[fName] = contenido; newChildren.push(fName);
+                    pData.splitMeta[fName] = { attrs: attrs || "" }; // GUARDA ATRIBUTOS
+                    if(!pData.openTabs.includes(fName)) pData.openTabs.push(fName);
+                    return "<!-- [SLAPY-SPLIT:" + fName + "] -->";
+                });
+
+                // Extrae JS/JSON capturando atributos (group 1)
+                var scriptTagRegex = /<script([^>]*)>([\s\S]*?)<\/script>/gi;
+                htmlCode = htmlCode.replace(scriptTagRegex, function(m, attrs, inner) {
+                    if (attrs.toLowerCase().includes('src=')) return m;
+                    var contenido = inner.trim(); if(contenido === "") return m;
+                    
+                    var fName = "";
+                    if(attrs.toLowerCase().includes('application/json')) {
+                        jsonCount++; var idMatch = attrs.match(/id=['"]([^'"]+)['"]/i);
+                        fName = idMatch ? idMatch[1] + ".json" : baseName + "-data" + (jsonCount===1?"":jsonCount) + ".json";
+                    } else {
+                        jsCount++; 
+                        fName = baseName + "-script" + (jsCount===1?"":jsCount) + ".js";
+                    }
+                    
+                    pData.files[fName] = contenido; newChildren.push(fName);
+                    pData.splitMeta[fName] = { attrs: attrs || "" }; // GUARDA ATRIBUTOS
+                    if(!pData.openTabs.includes(fName)) pData.openTabs.push(fName);
+                    return "<!-- [SLAPY-SPLIT:" + fName + "] -->";
+                });
+
+                if(newChildren.length > 0) {
+                    pData.files[htmlFileName] = htmlCode.trim();
+                    pData.splitMap[htmlFileName] = newChildren;
+                    if(btn) { btn.innerText = "Un-Split"; btn.classList.add("active-tool"); }
+                    saveLocalState(); renderExplorer(); openFile(pName, htmlFileName);
+                } else {
+                    showToast("No hay CSS/JS interno para separar.");
+                }
+
+            } else { 
+                // MODO UN-SPLIT RESTAURANDO ATRIBUTOS Y POSICIONAMIENTO
+                splitChildren.forEach(function(f) {
+                    var content = pData.files[f] || "";
+                    var meta = pData.splitMeta && pData.splitMeta[f] ? pData.splitMeta[f] : { attrs: "" };
+                    var attrs = meta.attrs;
+                    var fullBlock = "";
+                    
+                    if(f.endsWith('.css')) {
+                        fullBlock = '<style' + attrs + '>\n' + content + '\n</st' + 'yle>'; 
+                    } else if(f.endsWith('.json')) {
+                        // Resguardo por si el id o type no estaban en los atributos originales guardados
+                        if(!attrs.toLowerCase().includes('type=')) attrs = ' type="application/json"' + attrs;
+                        if(!attrs.toLowerCase().includes('id=')) attrs += ' id="' + f.split('.')[0] + '"';
+                        fullBlock = '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>';
+                    } else if(f.endsWith('.js')) {
+                        fullBlock = '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>'; 
+                    }
+                    
+                    var markerRegex = new RegExp("<!--\\s*\\[SLAPY-SPLIT:\\s*" + escapeRegExp(f) + "\\s*\\]\\s*-->", "i");
+                    
+                    if(markerRegex.test(htmlCode)) {
+                        htmlCode = htmlCode.replace(markerRegex, function() { return fullBlock; });
+                    } else {
+                        // Fallback Seguro anti-inyección
+                        if(f.endsWith('.css')) {
+                            if(htmlCode.indexOf('</head>') !== -1) htmlCode = htmlCode.replace('</head>', function() { return fullBlock + '\n</head>'; });
+                            else htmlCode = fullBlock + '\n' + htmlCode;
+                        } else {
+                            if(htmlCode.indexOf('</body>') !== -1) htmlCode = htmlCode.replace('</body>', function() { return fullBlock + '\n</body>'; });
+                            else htmlCode = htmlCode + '\n' + fullBlock;
+                        }
+                    }
+
+                    delete pData.files[f]; removeTab(pName, f);
+                    if(pData.splitMeta) delete pData.splitMeta[f];
+                });
+
+                htmlCode = htmlCode.replace(/<!--\s*\[SLAPY-SPLIT:.*?\]\s*-->/gi, '');
+
+                pData.files[htmlFileName] = htmlCode;
+                pData.splitMap[htmlFileName] = [];
+                
+                if(btn) { btn.innerText = "Split"; btn.classList.remove("active-tool"); }
+                saveLocalState(); renderExplorer(); openFile(pName, htmlFileName);
+            }
+        }
+
+        // =========================================================
+        // MOTOR DE EJECUCIÓN MEJORADO (ATRIBUTOS Y SEGREGACIÓN)
+        // =========================================================
+        function runCode() {
+            var pName = appState.activePortafolio;
+            if(!pName || !appState.portafolios[pName]) {
+                var keys = Object.keys(appState.portafolios || {});
+                if(keys.length > 0) { activatePortafolio(keys[0]); pName = appState.activePortafolio; }
+                else return;
+            }
+            
+            var pData = appState.portafolios[pName];
+            var htmlFileName = appState.activeFile;
+            
+            if(!htmlFileName || !htmlFileName.endsWith('.html')) {
+                var foundParent = Object.keys(pData.splitMap || {}).find(function(h) { 
+                    return Array.isArray(pData.splitMap[h]) && pData.splitMap[h].includes(htmlFileName); 
+                });
+                if(foundParent) htmlFileName = foundParent;
+                else {
+                    for(var f in (pData.files || {})) { if(f.endsWith('.html')) { htmlFileName = f; break; } }
+                }
+            }
+
+            if(!htmlFileName || !pData.files || pData.files[htmlFileName] === undefined) {
+                showToast("No hay archivo HTML abierto para ejecutar."); return;
+            }
+
+            var htmlCode = pData.files[htmlFileName];
+            var splitChildren = (pData.splitMap && pData.splitMap[htmlFileName]) || [];
+            
+            var cssCode = ""; var jsCode = "";
+            
+            splitChildren.forEach(function(fName) {
+                var content = pData.files[fName] || "";
+                var meta = pData.splitMeta && pData.splitMeta[fName] ? pData.splitMeta[fName] : { attrs: "" };
+                var attrs = meta.attrs;
+
+                if(fName.endsWith('.css')) {
+                    cssCode += '<style' + attrs + '>\n' + content + '\n</st' + 'yle>\n';
+                } else if(fName.endsWith('.json')) {
+                    if(!attrs.toLowerCase().includes('type=')) attrs = ' type="application/json"' + attrs;
+                    if(!attrs.toLowerCase().includes('id=')) attrs += ' id="' + fName.split('.')[0] + '"';
+                    jsCode += '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>\n';
+                } else if(fName.endsWith('.js')) {
+                    jsCode += '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>\n';
+                }
+            });
+            
+            var combined = htmlCode;
+            if(cssCode) {
+                if(combined.indexOf("</head>") !== -1) combined = combined.replace("</head>", cssCode + '</head>');
+                else combined = cssCode + combined;
+            }
+            if(jsCode) {
+                if(combined.indexOf("</body>") !== -1) combined = combined.replace("</body>", jsCode + '</body>');
+                else combined = combined + '\n' + jsCode;
+            }
+            
+            var wrapper = document.getElementById('iframe-wrapper');
+            if(wrapper) {
+                wrapper.innerHTML = ''; 
+                var iframe = document.createElement('iframe');
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.srcdoc = combined;
+                wrapper.appendChild(iframe);
+            }
+            saveLocalState();
+            showToast("✔ Código Ejecutado");
+        }
+
+        function setLayout(mode) {
+            document.querySelectorAll('.header-center .view-controls button').forEach(function(b) { b.classList.remove('active'); });
+            var targetBtn = document.querySelector('.header-center .view-controls button[onclick="setLayout(\''+mode+'\')"]');
+            if(targetBtn) targetBtn.classList.add('active');
+
+            var ed = document.getElementById('editor-section');
+            var prev = document.getElementById('preview-section');
+
+            if(ed && prev) {
+                ed.classList.remove('hidden-panel', 'flex-half', 'flex-full');
+                prev.classList.remove('hidden-panel', 'flex-half', 'flex-full');
+
+                if(mode === 'code') { prev.classList.add('hidden-panel'); ed.classList.add('flex-full'); }
+                else if(mode === 'preview') { ed.classList.add('hidden-panel'); prev.classList.add('flex-full'); }
+                else { ed.classList.add('flex-half'); prev.classList.add('flex-half'); }
+            }
+            
+            setTimeout(function() { if(editor) editor.refresh(); }, 50);
+        }
+
+        function toggleFullscreen() {
+            document.body.classList.toggle('fullscreen');
+            setTimeout(function() { if(editor) editor.refresh(); }, 50);
+        }
+
+        var isSidebarPinned = true;
+
+        function toggleSidebarPin() {
+            isSidebarPinned = !isSidebarPinned;
+            var sb = document.getElementById('sidebar');
+            var btn = document.getElementById('btn-pin-sidebar');
+            
+            if(isSidebarPinned) {
+                sb.classList.remove('unpinned', 'visible');
+                if(btn) { btn.style.color = "var(--text-muted)"; btn.title = "Desfijar Menú (Shift+M)"; }
+                showToast("📌 Menú fijado a la pantalla");
+            } else {
+                sb.classList.add('unpinned');
+                if(btn) { btn.style.color = "var(--accent)"; btn.title = "Fijar Menú (Shift+M)"; }
+                showToast("💨 Modo Inmersivo: Acércate al borde izquierdo");
+            }
+            setTimeout(function() { if(editor) editor.refresh(); }, 300);
+        }
+
+        // Radar automático para el mouse
+        document.addEventListener('mousemove', function(e) {
+            if(isSidebarPinned) return; // Si está fijado, el radar no hace nada
+            var sb = document.getElementById('sidebar');
+            if(!sb) return;
+            
+            // Si el mouse toca los primeros 20 píxeles del lado izquierdo, saca el menú
+            if(e.clientX <= 20 && !sb.classList.contains('visible')) {
+                sb.classList.add('visible');
+            } 
+            // Si el mouse se aleja más allá del ancho del menú (280px + un margen), lo esconde
+            else if(e.clientX > 285 && sb.classList.contains('visible')) {
+                sb.classList.remove('visible');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); runCode(); }
+            if ((e.altKey || e.ctrlKey || e.metaKey) && !e.shiftKey) {
+                if (e.key === '0') { e.preventDefault(); toggleFullscreen(); }
+                if (e.key === '1') { e.preventDefault(); setLayout('code'); }
+                if (e.key === '2') { e.preventDefault(); setLayout('split'); }
+                if (e.key === '3') { e.preventDefault(); setLayout('preview'); }
+            }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); toggleSearch(); }
+
+            if (e.shiftKey && !e.ctrlKey && !e.altKey) {
+                var activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                var isTyping = (activeTag === 'input' || activeTag === 'textarea' || document.activeElement.closest('.CodeMirror'));
+                if (!isTyping) {
+                    if (e.key === 'M' || e.key === 'm') { e.preventDefault(); toggleSidebarPin(); }
+                    if (e.key === 'L' || e.key === 'l') { e.preventDefault(); openCloudModal(); } 
+                    if (e.key === 'P' || e.key === 'p') { e.preventDefault(); openCloudModal(); switchCloudTab('history'); }
+                    if (e.key === '0' || e.code === 'Digit0') { e.preventDefault(); toggleFullscreen(); }
+                    if (e.key === '1' || e.code === 'Digit1') { e.preventDefault(); setLayout('code'); }
+                    if (e.key === '2' || e.code === 'Digit2') { e.preventDefault(); setLayout('split'); }
+                    if (e.key === '3' || e.code === 'Digit3') { e.preventDefault(); setLayout('preview'); }
+                }
+            }
+        });
+
+        function offloadProject(pName, e) {
+            e.stopPropagation(); // Evita que la carpeta se abra/cierre
+            var pData = appState.portafolios[pName];
+            if(!pData || pData.isGhost) return;
+            
+            if(confirm("⚠️ ¿Deseas eliminar la descarga local de '" + pName + "'?\n\nEsto liberará espacio en tu navegador. Los archivos volverán a estar vacíos hasta que hagas 'Get' de nuevo.\n\n(Asegúrate de haber hecho 'Push' si tenías cambios recientes).")) {
+                
+                // Magia: Convertir todos los archivos a strings vacíos para liberar Megabytes
+                for(var f in pData.files) {
+                    pData.files[f] = "";
+                }
+                
+                pData.isGhost = true;
+                pData.isOpen = false;
+                pData.localHistory = {}; 
+                pData.openTabs = []; // Cerramos sus pestañas
+                
+                if(appState.activePortafolio === pName) {
+                    appState.activeFile = null;
+                    if(editor) editor.setValue("");
+                }
+                
+                saveLocalState();
+                renderExplorer();
+                checkEmptyState();
+                showToast("🧹 Descarga eliminada. Proyecto en Nube.");
+            }
+        }
+        
+        function loadLocalState() {
+            return localforage.getItem('slapy_state_v34').then(function(savedData) {
+                if(savedData && typeof savedData === 'object') {
+                    appState = savedData;
+                } else {
+                    // MIGRACIÓN: Rescate automático de localStorage
+                    try {
+                        var oldData = localStorage.getItem('slapy_state_v34');
+                        if(oldData) {
+                            appState = JSON.parse(oldData);
+                            localforage.setItem('slapy_state_v34', appState); // Pasa todo a IndexedDB
+                        }
+                    } catch(e) { console.error(e); }
+                }
+                
+                if(!appState || typeof appState !== 'object') appState = { portafolios: {}, activePortafolio: null, activeFile: null };
+                if(!appState.portafolios || typeof appState.portafolios !== 'object') appState.portafolios = {};
+                
+                for(var p in appState.portafolios) {
+                    if(!appState.portafolios[p] || typeof appState.portafolios[p] !== 'object') appState.portafolios[p] = {};
+                    if(!appState.portafolios[p].files || typeof appState.portafolios[p].files !== 'object') appState.portafolios[p].files = {};
+                    if(!appState.portafolios[p].openTabs || !Array.isArray(appState.portafolios[p].openTabs)) appState.portafolios[p].openTabs = [];
+                    if(!appState.portafolios[p].splitMap || typeof appState.portafolios[p].splitMap !== 'object') appState.portafolios[p].splitMap = {};
+                    if(!appState.portafolios[p].splitMeta || typeof appState.portafolios[p].splitMeta !== 'object') appState.portafolios[p].splitMeta = {};
+                    if(!appState.portafolios[p].localHistory || typeof appState.portafolios[p].localHistory !== 'object') appState.portafolios[p].localHistory = {};
+                }
+                
+                if(Object.keys(appState.portafolios).length === 0) {
+                    appState.portafolios["Mi Proyecto"] = {
+                        isOpen: true,
+                        files: { "index.html": "<!--\n[SLAPY-VERSION: 1.0.0.0]\n[SLAPY-DESC: Proyecto inicial]\n-->\n<h1 id='tit'>Hola Mundo</h1>\n<button id='btn'>Probar</button>\n<scr" + "ipt>\ndocument.getElementById('btn').onclick = function() {\n  alert('IndexedDB funcionando.');\n};\n</scr" + "ipt>" },
+                        openTabs: ["index.html"], localHistory: {}, splitMap: {}, splitMeta: {}
+                    };
+                }
+                
+                var pName = appState.activePortafolio;
+                if(!pName || !appState.portafolios[pName]) pName = Object.keys(appState.portafolios)[0];
+                
+                if(pName && appState.portafolios[pName]) activatePortafolio(pName);
+                else renderExplorer();
+                
+                checkEmptyState();
+            }).catch(function(err) {
+                console.error("Error al arrancar IndexedDB:", err);
+            });
+        }
+        
+        function updateAuthUI() {
+            var disp = document.getElementById('sidebar-user-display');
+            var avatar = document.getElementById('avatar-letter');
+            var loggedOutUI = document.getElementById('auth-ui-logged-out');
+            var loggedInUI = document.getElementById('auth-ui-logged-in');
+            
+            if (currentUserCustom !== "") {
+                var nDisplay = currentDisplayName || currentUserCustom || "U";
+                if(disp) disp.innerText = nDisplay;
+                if(avatar) avatar.innerText = nDisplay.charAt(0).toUpperCase();
+                if(loggedOutUI) loggedOutUI.style.display = 'none';
+                if(loggedInUI) loggedInUI.style.display = 'flex';
+                loadProjectsFromCloud();
+            } else {
+                if(loggedOutUI) loggedOutUI.style.display = 'block';
+                if(loggedInUI) loggedInUI.style.display = 'none';
+            }
+        }
+
+        loadLocalState().then(function() {
+            updateAuthUI(); 
+            setTimeout(runCode, 300);
+        });
+
+        // =========================================================
+        // AUTENTICACIÓN FIREBASE AUTH
+        // =========================================================
+        var authMode = 'login';
+        
+        function openLoginModal() { 
+            var lm = document.getElementById('login-modal');
+            if(lm) {
+                lm.classList.add('active');
+                setTimeout(function(){ document.getElementById('email-input').focus(); }, 100);
+            }
+        }
+        function closeLoginModal() { 
+            var lm = document.getElementById('login-modal');
+            if(lm) lm.classList.remove('active'); 
+        }
+
+        function switchAuthTab(mode) {
+            authMode = mode;
+            document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+            document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+            document.getElementById('auth-action-btn').innerText = mode === 'login' ? 'Entrar' : 'Crear Cuenta';
+            document.getElementById('auth-error').innerText = '';
+        }
+
+        function checkEnterLogin(e) {
+            if(e.key === 'Enter') doAuthAction();
+        }
+
+        function doAuthAction() {
+            if (authMode === 'login') loginFirebase();
+            else registerFirebase();
+        }
+
+        function finishLogin(email, displayName, isLocalFallback) {
+            currentUserCustom = email;
+            currentDisplayName = displayName;
+            localStorage.setItem('slapy_logged_user', email);
+            localStorage.setItem('slapy_display_name', displayName);
+            document.getElementById('auth-error').innerText = "";
+            
+            appState.portafolios = {};
+            appState.activePortafolio = null;
+            appState.activeFile = null;
+            if(editor) editor.setValue("");
+
+            closeLoginModal(); 
+            updateAuthUI(); 
+            
+            if (isLocalFallback) showToast("Modo Local Activado: " + email);
+            else if(authMode === 'login') showToast("Sesión iniciada correctamente");
+        }
+
+        function loginFirebase() {
+            var email = document.getElementById('email-input').value.trim();
+            var pass = document.getElementById('pass-input').value;
+            var err = document.getElementById('auth-error');
+            if(!email || !pass) { err.innerText = "Ingresa tu correo y contraseña."; return; }
+            err.innerText = "Cargando...";
+
+            if(typeof firebase !== 'undefined' && firebase.auth) {
+                firebase.auth().signInWithEmailAndPassword(email, pass)
+                .then(function(cred) {
+                    var disp = cred.user.displayName || email.split('@')[0];
+                    finishLogin(email, disp, false);
+                })
+                .catch(function(e) {
+                    if(e.code === 'auth/network-request-failed') finishLogin(email, email.split('@')[0], true);
+                    else err.innerText = "Error: Credenciales incorrectas.";
+                });
+            } else {
+                finishLogin(email, email.split('@')[0], true);
+            }
+        }
+
+        function registerFirebase() {
+            var email = document.getElementById('email-input').value.trim();
+            var pass = document.getElementById('pass-input').value;
+            var err = document.getElementById('auth-error');
+            if(!email || !pass) { err.innerText = "Ingresa un correo y contraseña."; return; }
+            if(pass.length < 6) { err.innerText = "La contraseña debe tener mínimo 6 caracteres."; return; }
+            err.innerText = "Creando...";
+            
+            if(typeof firebase !== 'undefined' && firebase.auth) {
+                firebase.auth().createUserWithEmailAndPassword(email, pass)
+                .then(function(cred) {
+                    showToast("Cuenta creada exitosamente");
+                    finishLogin(email, email.split('@')[0], false);
+                })
+                .catch(function(e) {
+                    if(e.code === 'auth/network-request-failed') finishLogin(email, email.split('@')[0], true);
+                    else if(e.code === 'auth/email-already-in-use') err.innerText = "Error: El correo ya está registrado.";
+                    else if(e.code === 'auth/operation-not-allowed') err.innerText = "Error: Habilita Correo/Contraseña en Firebase Console.";
+                    else err.innerText = "Error: " + e.message;
+                });
+            } else {
+                finishLogin(email, email.split('@')[0], true);
+            }
+        }
+
+        function logoutCustom() { 
+            currentUserCustom = ""; currentDisplayName = "";
+            localStorage.removeItem('slapy_logged_user'); localStorage.removeItem('slapy_display_name'); 
+            
+            if(typeof firebase !== 'undefined' && firebase.auth) {
+                firebase.auth().signOut().catch(function(){});
+            }
+            
+            appState.portafolios = {};
+            appState.portafolios["Mi Proyecto"] = {
+                isOpen: true,
+                files: { "index.html": "<!--\n[SLAPY-VERSION: 1.0.0.0]\n[SLAPY-DESC: Proyecto inicial]\n-->\n<h1 id='tit'>Hola Mundo</h1>\n<button id='btn'>Probar</button>\n<scr" + "ipt>\ndocument.getElementById('btn').onclick = function() {\n  alert('IndexedDB funcionando.');\n};\n</scr" + "ipt>" },
+                openTabs: ["index.html"], localHistory: {}, splitMap: {}, splitMeta: {}
+            };
+            appState.activePortafolio = "Mi Proyecto"; 
+            appState.activeFile = "index.html"; 
+            
+            saveLocalState(); renderExplorer(); updateAuthUI(); activatePortafolio("Mi Proyecto"); checkEmptyState();
+            showToast("Sesión cerrada");
+        }
+
+        // =========================================================
+        // GESTIÓN DE CUENTA Y NUBE
+        // =========================================================
+        function openAccountModal() {
+            var am = document.getElementById('account-modal');
+            if(am) {
+                document.getElementById('acc-name').value = currentDisplayName;
+                document.getElementById('acc-pass').value = '';
+                document.getElementById('acc-msg').innerText = '';
+                am.classList.add('active');
+            }
+        }
+        function closeAccountModal() { 
+            var am = document.getElementById('account-modal');
+            if(am) am.classList.remove('active'); 
+        }
+        
+        function freeMemory() {
+            if(!confirm("⚠️ ¿Limpiar la memoria de la aplicación?\n\nEsto hará que TODOS tus proyectos inactivos pasen a Modo Fantasma (ahorrando mucho espacio), limpiará la caché de la Máquina del Tiempo y recargará la página.\n\nNo perderás tus datos en la nube ni se cerrará tu sesión.")) return;
+            
+            var keepProject = appState.activePortafolio;
+            for(var pName in appState.portafolios) {
+                var pData = appState.portafolios[pName];
+                
+                // Convertir a fantasma todos menos el activo
+                if(pName !== keepProject && !pData.isGhost) {
+                    for(var f in pData.files) pData.files[f] = "";
+                    pData.isGhost = true;
+                    pData.isOpen = false;
+                    pData.openTabs = [];
+                }
+                
+                // Purgar el historial local de TODOS los proyectos para liberar RAM
+                pData.localHistory = {};
+            }
+            
+            saveLocalState();
+            showToast("🧹 Limpiando RAM y recargando...");
+            
+            // Recarga limpia para forzar al navegador a liberar memoria
+            setTimeout(function() { window.location.reload(); }, 1000);
+        }
+
+        function updateAccount() {
+            var newName = document.getElementById('acc-name').value.trim();
+            var newPass = document.getElementById('acc-pass').value;
+            var msgEl = document.getElementById('acc-msg');
+            if(!newName) return;
+            
+            msgEl.innerText = "Guardando...";
+            var promises = [];
+            var user = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null;
+            
+            if (user) {
+                if(newName && newName !== currentDisplayName) promises.push(user.updateProfile({ displayName: newName }));
+                if(newPass) promises.push(user.updatePassword(newPass));
+                
+                Promise.all(promises).then(function() {
+                    currentDisplayName = newName;
+                    localStorage.setItem('slapy_display_name', currentDisplayName);
+                    msgEl.innerText = "✔ Actualizado";
+                    updateAuthUI();
+                    setTimeout(closeAccountModal, 1000);
+                }).catch(function(e) {
+                    if(e.code === 'auth/requires-recent-login') msgEl.innerText = "Cierra sesión y vuelve a entrar para cambiar contraseña.";
+                    else msgEl.innerText = "Error: " + e.message;
+                });
+            } else {
+                currentDisplayName = newName; 
+                localStorage.setItem('slapy_display_name', currentDisplayName);
+                msgEl.innerText = "✔ Guardado localmente"; 
+                updateAuthUI(); 
+                setTimeout(closeAccountModal, 1000);
+            }
+        }
+
+        function openCloudModal(mode) {
+            mode = mode || 'history'; // Por defecto abrimos como Historial (Nube inferior)
+            
+            if (currentUserCustom === "") { alert("Inicia sesión primero para usar la nube."); openLoginModal(); return; }
+            var pName = appState.activePortafolio;
+            if (!pName) { showToast("Abre un portafolio en el explorador primero."); return; }
+            
+            var titleEl = document.getElementById('cloud-modal-title');
+            if(titleEl) titleEl.innerText = "Nube: " + pName;
+            
+            var files = (appState.portafolios[pName] && appState.portafolios[pName].files) || {};
+            var mainCode = files[appState.activeFile] || files['index.html'] || "";
+            if(!mainCode && Object.keys(files).length > 0) mainCode = files[Object.keys(files)[0]];
+
+            var vMatch = mainCode.match(/\[SLAPY-VERSION:\s*(.*?)(?:\]|\-\->)/i) || mainCode.match(/\[CS-VERSION:\s*(.*?)(?:\]|\-\->)/i);
+            var dMatch = mainCode.match(/\[SLAPY-DESC:\s*([\s\S]*?)(?:\]|\-\->)/i) || mainCode.match(/\[CS-DESC:\s*([\s\S]*?)(?:\]|\-\->)/i);
+            
+            document.getElementById('commit-title').value = vMatch ? "v" + vMatch[1].trim() : "";
+            document.getElementById('commit-desc').value = dMatch ? dMatch[1].trim() : "";
+
+            var cm = document.getElementById('cloud-modal');
+            if(cm) cm.classList.add('active');
+            
+            var tabSave = document.getElementById('tab-cloud-save');
+            if (mode === 'history') {
+                if(tabSave) tabSave.style.display = 'none'; // Ocultamos la pestaña de Push
+                switchCloudTab('history');
+            } else {
+                if(tabSave) tabSave.style.display = 'block'; // Mostramos la pestaña de Push
+                switchCloudTab('save');
+            }
+        }
+        function closeCloudModal() { 
+            var cm = document.getElementById('cloud-modal');
+            if(cm) cm.classList.remove('active'); 
+        }
+
+        function switchCloudTab(tabName) {
+            var tabSave = document.getElementById('tab-cloud-save');
+            var tabHist = document.getElementById('tab-cloud-hist');
+            var secSave = document.getElementById('cloud-save-section');
+            var secHist = document.getElementById('cloud-hist-section');
+            
+            if(tabSave && tabHist && secSave && secHist) {
+                tabSave.classList.remove('active'); tabHist.classList.remove('active');
+                secSave.classList.remove('active'); secHist.classList.remove('active');
+                
+                if(tabName === 'save') {
+                    tabSave.classList.add('active'); secSave.classList.add('active');
+                    if(!document.getElementById('commit-title').value) document.getElementById('commit-title').focus();
+                } else {
+                    tabHist.classList.add('active'); secHist.classList.add('active');
+                    loadCloudHistoryUI();
+                }
+            }
+        }
+
+        function saveCommit() {
+            var pName = appState.activePortafolio;
+            var title = document.getElementById('commit-title').value.trim(); var desc = document.getElementById('commit-desc').value.trim();
+            if (title === "" || desc === "") { alert("Pon título y descripción."); return; }
+            
+            var btn = document.querySelector('#cloud-save-section .btn-primary'); 
+            if(btn) btn.innerText = "Subiendo... ⏳";
+            var jsonArchivos = JSON.stringify({
+                files: appState.portafolios[pName].files, 
+                splitMap: appState.portafolios[pName].splitMap,
+                splitMeta: appState.portafolios[pName].splitMeta,
+                isFavorite: appState.portafolios[pName].isFavorite || false
+            }); 
+            
+            if(db) {
+                db.collection("proyectos").doc(pName).set({ nombre: pName, usuario: currentUserCustom, archivos_json: jsonArchivos, actualizado: Date.now() }).then(function() {
+                    db.collection("proyectos").doc(pName).collection("commits").add({
+                        titulo: title, descripcion: desc, archivos_json: jsonArchivos, usuario: currentUserCustom, timestamp: Date.now()
+                    }).then(function() {
+                        document.getElementById('commit-title').value = ''; document.getElementById('commit-desc').value = '';
+                        if(btn) btn.innerText = "☁️ Subir a la Nube"; switchCloudTab('history');
+                        showToast("Guardado en la Nube con éxito");
+                    });
+                }).catch(function(e) { if(btn) btn.innerText = "☁️ Subir a la Nube"; alert("Error en la nube: " + e.message); });
+            } else {
+                if(btn) btn.innerText = "☁️ Subir a la Nube"; alert("Función de Nube no disponible sin conexión a Firebase.");
+            }
+        }
+
+        function loadCloudHistoryUI() {
+            var pName = appState.activePortafolio;
+            var container = document.getElementById('history-list-container');
+            if(!container) return;
+            container.innerHTML = "<div class='empty-text'>Cargando historial de la nube...</div>";
+
+            if(db) {
+                db.collection("proyectos").doc(pName).collection("commits").orderBy("timestamp", "desc").get().then(function(querySnapshot) {
+                    if (querySnapshot.empty) { container.innerHTML = "<div class='empty-text'>Sin commits en la nube.</div>"; return; }
+                    container.innerHTML = ""; globalCommits = {}; 
+                    
+                    querySnapshot.forEach(function(doc) {
+                        var data = doc.data(); var commitId = doc.id; globalCommits[commitId] = data.archivos_json; 
+                        var d = new Date(data.timestamp); var m = d.getMinutes(); if(m < 10) m = "0" + m;
+                        var dateStr = d.toLocaleDateString() + " " + d.getHours() + ":" + m;
+                        
+                        var card = document.createElement("div"); card.className = "commit-card";
+                        card.innerHTML = "<div class='commit-header'><span>" + dateStr + "</span><span>" + (data.usuario||"") + "</span></div>" +
+                                         "<div class='commit-title'>" + data.titulo + "</div><div class='commit-desc'>" + data.descripcion + "</div>";
+                        var btn = document.createElement("button"); btn.className = "btn-primary"; btn.innerText = "Restaurar Copia";
+                        btn.onclick = (function(cId) { return function() { restoreCommitCloud(pName, cId); }; })(commitId);
+                        card.appendChild(btn); container.appendChild(card);
+                    });
+                }).catch(function(e) { container.innerHTML = "<div class='empty-text'>Modo sin conexión.</div>"; });
+            } else {
+                container.innerHTML = "<div class='empty-text'>Historial en Nube no disponible sin conexión.</div>";
+            }
+        }
+
+        function restoreCommitCloud(pName, commitId) {
+            if(confirm("¿Restaurar proyecto desde la nube?\nSe perderán los cambios locales no guardados.")) {
+                try {
+                    var jsonSeguro = globalCommits[commitId];
+                    var parsedData = JSON.parse(jsonSeguro);
+                    
+                    var filesToRestore;
+                    if(parsedData.files !== undefined) filesToRestore = parsedData.files;
+                    else if(parsedData.ffiles !== undefined) filesToRestore = parsedData.ffiles;
+                    else {
+                        filesToRestore = Object.assign({}, parsedData);
+                        delete filesToRestore.splitMap; delete filesToRestore.splitMeta; delete filesToRestore.isFavorite; delete filesToRestore.isGhost;
+                    }
+                    
+                    appState.portafolios[pName].files = filesToRestore;
+                    appState.portafolios[pName].splitMap = parsedData.splitMap || {};
+                    appState.portafolios[pName].splitMeta = parsedData.splitMeta || {};
+                    appState.portafolios[pName].isFavorite = parsedData.isFavorite || false;
+                    appState.portafolios[pName].openTabs = Object.keys(appState.portafolios[pName].files); 
+                    saveLocalState(); renderExplorer(); 
+                    if(appState.portafolios[pName].openTabs.length > 0) openFile(pName, appState.portafolios[pName].openTabs[0]);
+                    runCode(); closeCloudModal(); showToast("Proyecto Restaurado de la Nube");
+                } catch(e) {}
+            }
+        }
+
+        function pushProject(pName, e) {
+            e.stopPropagation();
+            if(currentUserCustom === "") { showToast("Inicia sesión para usar la Nube."); openLoginModal(); return; }
+            
+            var pData = appState.portafolios[pName];
+            if(!pData) return;
+            if(pData.isGhost) { showToast("❌ No puedes hacer Push de un proyecto vacío (fantasma). Haz Get primero."); return; }
+            
+            // Convertimos el proyecto clickeado en el activo
+            appState.activePortafolio = pName;
+            
+            // Validamos que haya un archivo activo válido para que el modal lea la versión
+            if(!appState.activeFile || pData.files[appState.activeFile] === undefined) {
+                appState.activeFile = Object.keys(pData.files)[0] || "index.html";
+            }
+            
+            // Abrimos el modal de la nube en MODO PUSH (Guardar)
+            openCloudModal('save');
+        }
+
+        function getProject(pName, e) {
+            e.stopPropagation();
+            if(currentUserCustom === "") { showToast("Inicia sesión para hacer Get."); openLoginModal(); return; }
+            
+            if(appState.portafolios[pName] && !appState.portafolios[pName].isGhost) {
+                if(!confirm("⚠️ CUIDADO: El proyecto local '" + pName + "' será SOBRESCRITO con la versión de la nube. ¿Continuar?")) return;
+            }
+
+            var btn = e.currentTarget;
+            var originalHTML = btn.innerHTML;
+            btn.innerHTML = "⏳";
+
+            showToast("Descargando " + pName + "...");
+            if(db) {
+                db.collection("proyectos").doc(pName).get().then(function(doc) {
+                    btn.innerHTML = originalHTML;
+                    if(doc.exists && doc.data().usuario === currentUserCustom) {
+                        var parsedData = JSON.parse(doc.data().archivos_json);
+                        
+                        if(!appState.portafolios[pName]) {
+                            appState.portafolios[pName] = { isOpen: true, openTabs: [], localHistory: {} };
+                        }
+                        var pData = appState.portafolios[pName];
+                        
+                        // PARCHE DE AUTO-SANACIÓN PARA ARCHIVOS CORRUPTOS DE LA NUBE
+                        if(parsedData.files !== undefined) {
+                            pData.files = parsedData.files;
+                        } else if(parsedData.ffiles !== undefined) {
+                            pData.files = parsedData.ffiles;
+                        } else {
+                            pData.files = parsedData;
+                            delete pData.files.splitMap; delete pData.files.splitMeta; delete pData.files.isFavorite; delete pData.files.isGhost;
+                        }
+                        pData.splitMap = parsedData.splitMap || {};
+                        pData.splitMeta = parsedData.splitMeta || {};
+                        pData.isFavorite = parsedData.isFavorite || false;
+                        pData.isGhost = false;
+                        
+                        pData.openTabs = Object.keys(pData.files); 
+                        saveLocalState();
+                        renderExplorer();
+                        
+                        if(pData.openTabs.length > 0) {
+                            openFile(pName, pData.openTabs[0]);
+                        }
+                        showToast("⬇️ Get exitoso: " + pName);
+                    } else {
+                        showToast("No se encontró en la nube.");
+                    }
+                }).catch(function(err) {
+                    btn.innerHTML = originalHTML;
+                    showToast("Error en Get: " + err.message);
+                });
+            }
+        }
+
+        function forceSyncCloud() {
+            showToast("Sincronizando lista desde la nube...");
+            loadProjectsFromCloud();
+        }
+
+        function loadProjectsFromCloud() {
+            if(currentUserCustom === "" || !db) return;
+            db.collection("proyectos").where("usuario", "==", currentUserCustom).get().then(function(snap) {
+                var loadedCount = 0;
+                
+                snap.forEach(function(doc) {
+                    var pName = doc.id;
+                    
+                    // Si el proyecto ya existe y NO es fantasma, lo respetamos y NO lo sobreescribimos
+                    if(appState.portafolios[pName] && !appState.portafolios[pName].isGhost) {
+                        return; 
+                    }
+                    
+                    try { 
+                        var parsedData = JSON.parse(doc.data().archivos_json); 
+                        
+                        // AUTO-SANACIÓN PARA MODO GHOST
+                        var filesObj;
+                        if(parsedData.files !== undefined) filesObj = parsedData.files;
+                        else if(parsedData.ffiles !== undefined) filesObj = parsedData.ffiles;
+                        else {
+                            filesObj = Object.assign({}, parsedData);
+                            delete filesObj.splitMap; delete filesObj.splitMeta; delete filesObj.isFavorite; delete filesObj.isGhost;
+                        }
+                        
+                        // Magia Ghost: Creamos los archivos vacíos para no gastar memoria
+                        var emptyFiles = {};
+                        for(var f in filesObj) emptyFiles[f] = "";
+                        
+                        appState.portafolios[pName] = { 
+                            isOpen: false, 
+                            openTabs: [], 
+                            files: emptyFiles, 
+                            localHistory: {}, 
+                            splitMap: parsedData.splitMap || {}, 
+                            splitMeta: parsedData.splitMeta || {},
+                            isFavorite: parsedData.isFavorite || false,
+                            isGhost: true // Marcador Fantasma
+                        };
+                        loadedCount++;
+                    } catch(e) {}
+                });
+                
+                if(loadedCount > 0) {
+                    showToast("☁️ " + loadedCount + " proyectos en nube (Listos para Get)");
+                    saveLocalState(); renderExplorer(); checkEmptyState();
+                } else {
+                    showToast("Sincronización de lista completada.");
+                }
+            }).catch(function(e) { console.log("Uso en modo local activado"); });
+        }
+
+        function openLocalHistoryModal() {
+            if(!appState.activePortafolio || !appState.activeFile) { showToast("Abre un archivo para ver su historial local."); return; }
+            document.getElementById('local-history-file-name').innerText = "Archivo: " + appState.activeFile;
+            var container = document.getElementById('local-history-list'); container.innerHTML = "";
+
+            var pData = appState.portafolios[appState.activePortafolio];
+            if(!pData.localHistory || !pData.localHistory[appState.activeFile] || pData.localHistory[appState.activeFile].length === 0) {
+                container.innerHTML = "<div class='empty-text'>No hay cambios registrados hoy.</div>";
+            } else {
+                var arr = pData.localHistory[appState.activeFile];
+                for(var i = arr.length - 1; i >= 0; i--) {
+                    var item = arr[i];
+                    var node = document.createElement('div'); node.className = "time-node";
+                    node.innerHTML = "<div class='time-dot'></div><div class='time-lbl'>" + item.time + "</div><div class='time-desc'>" + item.desc + "</div>";
+                    var btn = document.createElement("button"); btn.className = "btn"; btn.innerText = "Restaurar Aquí";
+                    btn.style.border = "1px solid var(--border)";
+                    
+                    // RECONSTRUYE EL CÓDIGO AL VUELO PARA ESTE PUNTO EN EL TIEMPO
+                    var codeToRestore = getFullCodeAt(arr, i);
+
+                    btn.onclick = (function(code) {
+                        return function() {
+                            if(confirm("¿Volver a este punto en el tiempo?")) {
+                                isSyncing = true; 
+                                if(editor) { editor.setValue(code); editor.refresh(); }
+                                appState.portafolios[appState.activePortafolio].files[appState.activeFile] = code;
+                                saveLocalState(); runCode(); closeLocalHistoryModal(); isSyncing = false;
+                                setTimeout(function(){ showToast("✔ Historial Local Restaurado"); }, 100);
+                            }
+                        }
+                    })(codeToRestore);
+                    node.appendChild(btn); container.appendChild(node);
+                }
+            }
+            var lhm = document.getElementById('local-history-modal');
+            if(lhm) lhm.classList.add('active');
+        }
+        function closeLocalHistoryModal() { 
+            var lhm = document.getElementById('local-history-modal');
+            if(lhm) lhm.classList.remove('active'); 
+        }
+
+        function openInfoModal() { 
+            var im = document.getElementById('info-modal');
+            if(im) im.classList.add('active'); 
+        }
+        function closeInfoModal() { 
+            var im = document.getElementById('info-modal');
+            if(im) im.classList.remove('active'); 
+        }
+        function switchInfo(tab) {
+            document.getElementById('tab-win').classList.remove('active'); document.getElementById('tab-mac').classList.remove('active');
+            document.getElementById('tab-prompt').classList.remove('active'); document.getElementById('info-win').classList.remove('active');
+            document.getElementById('info-mac').classList.remove('active'); document.getElementById('info-prompt').classList.remove('active');
+            
+            document.getElementById('tab-' + tab).classList.add('active'); document.getElementById('info-' + tab).classList.add('active');
+        }
+        function copyPrompt() {
+            var copyText = document.getElementById("prompt-text");
+            if(copyText) {
+                copyText.select(); document.execCommand("copy");
+                showToast("Prompt copiado al portapapeles");
+            }
+        }
+
+        var searchState = { marks: [], index: -1, activeMark: null };
+        var isBlockSearch = false; // Estado del modo fragmento
+
+        function toggleSearch() { 
+            if(!editor) { showToast("Editor no inicializado"); return; }
+            var panel = document.getElementById('editor-search-panel');
+            var btnMain = document.getElementById('btn-search-main');
+            if(panel && btnMain) {
+                if(panel.classList.contains('active')) { 
+                    panel.classList.remove('active'); btnMain.classList.remove('active-tool'); clearSearchState(); 
+                } else { 
+                    panel.classList.add('active'); btnMain.classList.add('active-tool'); document.getElementById('live-search-input').focus(); 
+                }
+            }
+        }
+
+        function toggleBlockSearch() {
+            isBlockSearch = !isBlockSearch;
+            var btn = document.getElementById('btn-block-search');
+            var inputEnd = document.getElementById('live-search-end');
+            if(isBlockSearch) {
+                btn.classList.add('active-tool');
+                inputEnd.style.display = 'block';
+                inputEnd.focus();
+            } else {
+                btn.classList.remove('active-tool');
+                inputEnd.style.display = 'none';
+                inputEnd.value = '';
+            }
+            updateSearch(true);
+        }
+
+        function clearSearchState() {
+            searchState.marks.forEach(function(m) { m.clear(); }); if(searchState.activeMark) searchState.activeMark.clear();
+            searchState.marks = []; searchState.index = -1; searchState.activeMark = null;
+            var cnt = document.getElementById('search-count');
+            if(cnt) cnt.innerText = "0/0";
+        }
+
+        function updateSearch(jumpToFirst) {
+            if(!editor) return;
+            var qEl = document.getElementById('live-search-input');
+            var qEndEl = document.getElementById('live-search-end');
+            if(!qEl) return;
+            
+            var q = qEl.value;
+            var qEnd = isBlockSearch ? qEndEl.value : "";
+            
+            clearSearchState(); 
+            if(!q) return;
+
+            if (isBlockSearch && qEnd) {
+                // BÚSQUEDA POR FRAGMENTO (Desde -> Hasta)
+                var cursor = editor.getSearchCursor(q);
+                while(cursor.findNext()) {
+                    var startPos = cursor.from();
+                    // Inicia un nuevo cursor buscando el final, justo después del inicio encontrado
+                    var endCursor = editor.getSearchCursor(qEnd, cursor.to());
+                    if(endCursor.findNext()) {
+                        var endPos = endCursor.to();
+                        searchState.marks.push(editor.markText(startPos, endPos, {className: 'cm-matchhighlight'}));
+                        // Avanzamos el cursor principal para no solapar búsquedas
+                        cursor = editor.getSearchCursor(q, endPos);
+                    }
+                }
+            } else {
+                // BÚSQUEDA NORMAL
+                var cursor = editor.getSearchCursor(q);
+                while(cursor.findNext()) {
+                    searchState.marks.push(editor.markText(cursor.from(), cursor.to(), {className: 'cm-matchhighlight'}));
+                }
+            }
+
+            var cnt = document.getElementById('search-count');
+            if(searchState.marks.length > 0) { 
+                if(jumpToFirst) goToMatch(0); 
+                else if(cnt) cnt.innerText = "1 de " + searchState.marks.length; 
+            }
+        }
+
+        function goToMatch(idx) {
+            if(!editor || searchState.marks.length === 0) return;
+            searchState.index = (idx + searchState.marks.length) % searchState.marks.length;
+            var markObj = searchState.marks[searchState.index]; 
+            var pos = markObj.find(); 
+            if(!pos) return;
+            
+            if(searchState.activeMark) searchState.activeMark.clear();
+            searchState.activeMark = editor.markText(pos.from, pos.to, {className: 'cm-match-active'});
+            
+            // LA SORPRESA: Seleccionamos el texto en el editor. ¡Listo para ser borrado!
+            editor.setSelection(pos.from, pos.to);
+            
+            editor.scrollIntoView({from: pos.from, to: pos.to}, 100);
+            var cnt = document.getElementById('search-count');
+            if(cnt) cnt.innerText = (searchState.index + 1) + " de " + searchState.marks.length;
+        }
+
+        function nextMatch() { goToMatch(searchState.index + 1); }
+        function prevMatch() { goToMatch(searchState.index - 1); }
+        
+        function doReplace() {
+            if(!editor || searchState.marks.length === 0 || searchState.index === -1) return;
+            var rep = document.getElementById('live-replace-input').value; 
+            var pos = searchState.marks[searchState.index].find(); 
+            if(!pos) return;
+            // replaceRange usará los límites pos.from y pos.to (reemplazará todo el bloque)
+            editor.replaceRange(rep, pos.from, pos.to, 'replace'); 
+            updateSearch(true); 
+        }
+        
+        function doReplaceAll() {
+            if(!editor) return;
+            var q = document.getElementById('live-search-input').value; 
+            var rep = document.getElementById('live-replace-input').value; 
+            if(!q) return;
+            // Si no es modo bloque, hacemos un replace global rápido
+            if (!isBlockSearch) {
+                var content = editor.getValue(); isSyncing = true; 
+                editor.setValue(content.split(q).join(rep));
+                pushLocalHistory("Reemplazo de Todo"); isSyncing = false; updateSearch(true);
+            } else {
+                // Si es modo bloque, reemplazamos marcadores de atrás hacia adelante
+                isSyncing = true;
+                for (var i = searchState.marks.length - 1; i >= 0; i--) {
+                    var pos = searchState.marks[i].find();
+                    if(pos) editor.replaceRange(rep, pos.from, pos.to, 'replace');
+                }
+                pushLocalHistory("Reemplazo de Todo (Bloques)"); isSyncing = false; updateSearch(true);
+            }
+        }
+        
+        var searchInput = document.getElementById('live-search-input');
+        if(searchInput) {
+            searchInput.addEventListener('keydown', function(e) {
+                if(e.key === 'Enter') { e.preventDefault(); if(searchState.marks.length === 0) updateSearch(true); else nextMatch(); }
+            });
+        }
+        var searchEndInput = document.getElementById('live-search-end');
+        if(searchEndInput) {
+            searchEndInput.addEventListener('keydown', function(e) {
+                if(e.key === 'Enter') { e.preventDefault(); if(searchState.marks.length === 0) updateSearch(true); else nextMatch(); }
+            });
+        }
+    </script>
+
+    <!-- Registro PWA Seguro -->
+    <script>
+      if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('./sw.js')
+            .then(function(reg) { console.log('Service Worker de Slapy registrado.'); })
+            .catch(function(err) { console.log('Error PWA:', err); });
+        });
+      }
+    </script>
+</body>
+</html>    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
