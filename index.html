@@ -1,6 +1,6 @@
 <!--
-[SLAPY-VERSION: 1.0.46.0]
-[SLAPY-DESC: Integración Continua (CI/CD) con GitHub: Se rediseñó el panel de Admin para incluir conexión directa a la API de GitHub. Ahora el desarrollador puede hacer deploy (Over-The-Air Update) del código base directamente al repositorio remoto usando un Personal Access Token. Esto sobrescribe automáticamente el archivo index.html en GitHub Pages eliminando por completo la necesidad de actualizaciones manuales con archivos locales.]
+[SLAPY-VERSION: 1.0.46.2]
+[SLAPY-DESC: Bóveda Cloud de Administrador + RBAC: Se integró el control de acceso por roles (RBAC) restringiendo el panel Admin al correo oficial del desarrollador. Además, las credenciales de despliegue (GitHub PAT) se sincronizan de forma transparente con la colección 'usuarios' en Firestore, permitiendo un flujo de trabajo CI/CD portátil desde cualquier navegador o dispositivo.]
 -->
 <!DOCTYPE html>
 <html lang="es">
@@ -513,7 +513,7 @@
                 <button class="btn info-tab active" onclick="switchInfo('win')" id="tab-win">Windows</button>
                 <button class="btn info-tab" onclick="switchInfo('mac')" id="tab-mac">Mac OS</button>
                 <button class="btn info-tab" onclick="switchInfo('prompt')" id="tab-prompt">Prompt</button>
-                <button class="btn info-tab" onclick="switchInfo('update')" id="tab-update" style="color:var(--accent);">⚙️ Admin</button>
+                <button class="btn info-tab" onclick="switchInfo('update')" id="tab-update" style="color:var(--accent); display:none;">⚙️ Admin</button>
             </div>
             
             <div id="info-win" class="info-content active">
@@ -551,7 +551,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 <p style="color:var(--text-bright); font-size:12px; border:none; margin-bottom: 5px;"><strong>Centro de Actualización (Admin)</strong><br>Despliega actualizaciones a GitHub o descárgalas localmente.</p>
                 
                 <div style="display:flex; gap:5px; margin-bottom:5px;">
-                    <input type="text" id="gh-repo" class="input-dark" style="margin-bottom:0;" placeholder="Usuario/Repo (Ej. tucuenta/slapy)">
+                    <input type="text" id="gh-repo" class="input-dark" style="margin-bottom:0;" placeholder="Usuario/Repo (Ej. tucuenta/slapy)" value="The-Slapy/Slapy-Code">
                     <input type="text" id="gh-branch" class="input-dark" style="margin-bottom:0; width:30%;" placeholder="Rama (Ej. main)" value="main">
                 </div>
                 <input type="password" id="gh-token" class="input-dark" placeholder="GitHub Personal Access Token (PAT)">
@@ -1686,6 +1686,29 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 if(loggedOutUI) loggedOutUI.style.display = 'block';
                 if(loggedInUI) loggedInUI.style.display = 'none';
             }
+
+            // SISTEMA DE ROLES Y NUBE SECRETA: Admin solo para el Jefe
+            var adminTab = document.getElementById('tab-update');
+            if(adminTab) {
+                // REEMPLAZA ESTE CORREO POR EL TUYO REAL DE FIREBASE
+                if(currentUserCustom === "gab.rmz@icloud.com") { 
+                    adminTab.style.display = 'block';
+                    
+                    // Llama al token secreto desde Firebase
+                    if(db) {
+                        db.collection("usuarios").doc(currentUserCustom).get().then(function(doc) {
+                            if(doc.exists) {
+                                var d = doc.data();
+                                if(d.ghRepo) document.getElementById('gh-repo').value = d.ghRepo;
+                                if(d.ghBranch) document.getElementById('gh-branch').value = d.ghBranch;
+                                if(d.ghToken) document.getElementById('gh-token').value = d.ghToken;
+                            }
+                        }).catch(function(e){ console.error("Error leyendo token:", e); });
+                    }
+                } else {
+                    adminTab.style.display = 'none';
+                }
+            }
         }
 
         loadLocalState().then(function() {
@@ -2236,13 +2259,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             }
         }
 
-        // Cargar datos de GitHub al abrir (si los hay)
-        document.addEventListener('DOMContentLoaded', function() {
-            if(localStorage.getItem('slapy_gh_repo')) document.getElementById('gh-repo').value = localStorage.getItem('slapy_gh_repo');
-            if(localStorage.getItem('slapy_gh_branch')) document.getElementById('gh-branch').value = localStorage.getItem('slapy_gh_branch');
-            if(localStorage.getItem('slapy_gh_token')) document.getElementById('gh-token').value = localStorage.getItem('slapy_gh_token');
-        });
-
         // Convert string to base64 preserving utf-8
         function utf8_to_b64(str) {
             return window.btoa(unescape(encodeURIComponent(str)));
@@ -2285,10 +2301,12 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             var vMatch = code.match(/\[SLAPY-VERSION:\s*(.*?)\]/i);
             var version = vMatch ? vMatch[1].trim() : "update";
 
-            // Guardar configuración localmente
-            localStorage.setItem('slapy_gh_repo', repo);
-            localStorage.setItem('slapy_gh_branch', branch);
-            localStorage.setItem('slapy_gh_token', token);
+            // Guardar configuración encriptada en la Nube (Firestore)
+            if(db && currentUserCustom !== "") {
+                db.collection("usuarios").doc(currentUserCustom).set({
+                    ghRepo: repo, ghBranch: branch, ghToken: token
+                }, { merge: true });
+            }
 
             showToast("Conectando con GitHub... ⏳");
             
