@@ -1,6 +1,6 @@
 <!--
-[SLAPY-VERSION: 1.0.46.2]
-[SLAPY-DESC: Bóveda Cloud de Administrador + RBAC: Se integró el control de acceso por roles (RBAC) restringiendo el panel Admin al correo oficial del desarrollador. Además, las credenciales de despliegue (GitHub PAT) se sincronizan de forma transparente con la colección 'usuarios' en Firestore, permitiendo un flujo de trabajo CI/CD portátil desde cualquier navegador o dispositivo.]
+[SLAPY-VERSION: 1.0.46.3]
+[SLAPY-DESC: Optimización de Lecturas en Firestore: Se desvinculó la función loadProjectsFromCloud() del ciclo de actualización de interfaz updateAuthUI() y se introdujo la bandera global hasSyncedCloud. La consulta a la nube ahora solo se ejecuta bajo demanda (botón de sincronizar) o en el primer inicio de sesión, reduciendo drásticamente las lecturas masivas y previniendo el consumo del límite Spark.]
 -->
 <!DOCTYPE html>
 <html lang="es">
@@ -631,6 +631,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         var globalCommits = {}; 
         var editorFontSize = 14;
         var debounceHistory;
+        var hasSyncedCloud = false; // Guard de lecturas para Firestore
 
         var appState = { portafolios: {}, activePortafolio: null, activeFile: null };
 
@@ -1681,7 +1682,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 if(avatar) avatar.innerText = nDisplay.charAt(0).toUpperCase();
                 if(loggedOutUI) loggedOutUI.style.display = 'none';
                 if(loggedInUI) loggedInUI.style.display = 'flex';
-                loadProjectsFromCloud();
+                // OPTIMIZACIÓN: loadProjectsFromCloud no se ejecuta automáticamente en cada render UI
             } else {
                 if(loggedOutUI) loggedOutUI.style.display = 'block';
                 if(loggedInUI) loggedInUI.style.display = 'none';
@@ -1753,6 +1754,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         function finishLogin(email, displayName, isLocalFallback) {
             currentUserCustom = email;
             currentDisplayName = displayName;
+            hasSyncedCloud = false; // Reset de sincronización al cambiar/entrar usuario
             localStorage.setItem('slapy_logged_user', email);
             localStorage.setItem('slapy_display_name', displayName);
             document.getElementById('auth-error').innerText = "";
@@ -1818,6 +1820,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
 
         function logoutCustom() { 
             currentUserCustom = ""; currentDisplayName = "";
+            hasSyncedCloud = false; // Reset de bandera
             localStorage.removeItem('slapy_logged_user'); localStorage.removeItem('slapy_display_name'); 
             
             if(typeof firebase !== 'undefined' && firebase.auth) {
@@ -2131,12 +2134,15 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         }
 
         function forceSyncCloud() {
+            hasSyncedCloud = false; // Fuerza la consulta reiniciando el guard
             showToast("Sincronizando lista desde la nube...");
             loadProjectsFromCloud();
         }
 
         function loadProjectsFromCloud() {
-            if(currentUserCustom === "" || !db) return;
+            if(currentUserCustom === "" || !db || hasSyncedCloud) return;
+            hasSyncedCloud = true; // Previene lecturas innecesarias en el día
+            
             db.collection("proyectos").where("usuario", "==", currentUserCustom).get().then(function(snap) {
                 var loadedCount = 0;
                 
