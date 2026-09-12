@@ -1,6 +1,6 @@
 <!--
-[SLAPY-VERSION: 1.0.47.1]
-[SLAPY-DESC: Corrección de variables globales de GitHub: Se agregaron las definiciones en memoria de ghConfig, utf8_to_b64 y la sincronización automática del PAT desde Firestore para ejecutar despliegues con el botón Cargar.]
+[SLAPY-VERSION: 1.0.48.2]
+[SLAPY-DESC: Parche de Estabilidad y Memoria: Se implementó la destrucción profunda del proceso iframe en runCode() para evitar fugas de RAM en Safari WebKit y Chrome, se aumentó el debounce del historial local a 10s y se conservó la sincronización Cloud de atajos personalizados por usuario.]
 -->
 <!DOCTYPE html>
 <html lang="es">
@@ -228,7 +228,7 @@
         .info-tab.active { background-color: var(--accent); color: white; border-color: var(--accent); }
         .info-content { display: none; flex-direction: column; flex: 1; overflow-y: auto; overflow-x: hidden; padding-right: 5px; }
         .info-content.active { display: flex; }
-        .info-content p { font-size: 13px; color: var(--text-muted); margin: 8px 0; border-bottom: 1px solid var(--border); padding-bottom: 4px; display: flex; justify-content: space-between;}
+        .info-content p { font-size: 13px; color: var(--text-muted); margin: 8px 0; border-bottom: 1px solid var(--border); padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;}
         .info-content b { color: var(--text-bright); }
 
         /* TIMELINE HISTORIAL LOCAL */
@@ -510,48 +510,22 @@
             <h2>Información</h2>
             
             <div style="display:flex; gap:5px; margin-bottom:15px;">
-                <button class="btn info-tab active" onclick="switchInfo('win')" id="tab-win">Windows</button>
-                <button class="btn info-tab" onclick="switchInfo('mac')" id="tab-mac">Mac OS</button>
-                <button class="btn info-tab" onclick="switchInfo('prompt')" id="tab-prompt">Prompt</button>
+                <button class="btn info-tab active" onclick="switchInfo('win')" id="tab-win">Comandos</button>
                 <button class="btn info-tab" onclick="switchInfo('update')" id="tab-update" style="display:none;">Update</button>
             </div>
             
             <div id="info-win" class="info-content active">
-                <p><b>Ctrl + S</b> <span>Ejecutar HTML actual con sus divisiones</span></p>
-                <p><b>Ctrl + F</b> <span>Abrir buscador inteligente</span></p>
-                <p><b>Alt + 0</b> <span>Modo Pantalla Completa (Zen)</span></p>
-                <p><b>Alt + 1, 2, 3</b> <span>Cambiar estructura de pantalla</span></p>
-                <p><b>Shift + M</b> <span>Ocultar/Mostrar barra lateral</span></p>
-                <p><b>Shift + L</b> <span>Gestión Nube (Guardar/Historial)</span></p>
-            </div>
-            
-            <div id="info-mac" class="info-content">
-                <p><b>Cmd ⌘ + S</b> <span>Ejecutar HTML actual con sus divisiones</span></p>
-                <p><b>Cmd ⌘ + F</b> <span>Abrir buscador inteligente</span></p>
-                <p><b>Alt ⌥ + 0</b> <span>Modo Pantalla Completa (Zen)</span></p>
-                <p><b>Alt ⌥ + 1, 2, 3</b> <span>Cambiar estructura de pantalla</span></p>
-                <p><b>Shift ⇧ + M</b> <span>Ocultar/Mostrar barra lateral</span></p>
-                <p><b>Shift ⇧ + L</b> <span>Gestión Nube (Guardar/Historial)</span></p>
-            </div>
-
-            <div id="info-prompt" class="info-content">
-                <p style="color:var(--text-bright); font-size:12px; border:none; margin-bottom: 5px;">Copia este prompt y dáselo a la IA cuando quieras generar o editar código para que Slapy detecte la versión automáticamente:</p>
-                <textarea id="prompt-text" class="input-dark" style="height:140px; font-family:monospace; font-size:11px; margin-bottom:10px; resize:none;" readonly>
-Actúa como un desarrollador experto. Al generar o modificar el código, debes incluir SIEMPRE al principio del archivo principal el siguiente bloque exacto, incrementando la versión (formato x.x.x.x) y detallando los cambios:
-
-<!--
-[SLAPY-VERSION: 1.0.0.0]
-[SLAPY-DESC: Descripción de los cambios realizados en esta versión]
--->
-                </textarea>
-                <button class="btn-primary" onclick="copyPrompt()">Copiar Prompt</button>
+                <div id="shortcuts-list-container" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;"></div>
+                <button class="btn-primary" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted);" onclick="resetShortcuts()">
+                    Restablecer
+                </button>
             </div>
 
             <div id="info-update" class="info-content">
                 <textarea id="update-code-input" class="input-dark" style="height: 180px; font-family: monospace; font-size: 11px; margin-bottom: 12px; resize: none; border-radius: 6px; padding: 10px;" placeholder="Pega aquí el código <!DOCTYPE html>... de la nueva versión"></textarea>
                 
                 <button class="btn-primary btn-auth-modern" style="margin-top: 0; background: linear-gradient(180deg, #28a745, #1e7e34); border-top-color: #5cd078;" onclick="deployToGitHub()">
-                    Update
+                    🚀 Subir Actualización a GitHub
                 </button>
             </div>
         </div>
@@ -625,6 +599,19 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         var hasSyncedCloud = false; // Guard de lecturas para Firestore
         var ghConfig = { repo: "The-Slapy/Slapy-Code", branch: "main", token: "" };
 
+        // DICCIONARIO DE COMANDOS POR DEFECTO
+        var defaultShortcuts = {
+            runCode: { key: 's', ctrl: true, alt: false, shift: false, desc: 'Ejecutar Código' },
+            toggleSearch: { key: 'f', ctrl: true, alt: false, shift: false, desc: 'Buscar y Reemplazar' },
+            toggleFullscreen: { key: '0', ctrl: false, alt: true, shift: false, desc: 'Pantalla Completa' },
+            layoutCode: { key: '1', ctrl: false, alt: true, shift: false, desc: 'Vista Solo Código' },
+            layoutSplit: { key: '2', ctrl: false, alt: true, shift: false, desc: 'Vista Dividida' },
+            layoutPreview: { key: '3', ctrl: false, alt: true, shift: false, desc: 'Vista Solo Preview' },
+            toggleSidebarPin: { key: 'm', ctrl: false, alt: false, shift: true, desc: 'Fijar/Ocultar Menú' },
+            openCloudModal: { key: 'l', ctrl: false, alt: false, shift: true, desc: 'Gestión Nube' }
+        };
+
+        var customShortcuts = JSON.parse(localStorage.getItem('slapy_shortcuts')) || JSON.parse(JSON.stringify(defaultShortcuts));
         var appState = { portafolios: {}, activePortafolio: null, activeFile: null };
 
         function showToast(msg) {
@@ -669,7 +656,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                                 else if (changeObj.origin === '+delete') action = "Texto borrado";
                                 else if (changeObj.origin === 'replace') action = "Palabra reemplazada";
                                 pushLocalHistory(action);
-                            }, 3000);
+                            }, 10000); // OPTIMIZADO PARA SAFARI: 10s DEBOUNCE
                         }
                         saveLocalState();
                     });
@@ -1409,6 +1396,9 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             }
         }
 
+        // =========================================================
+        // MOTOR DE EJECUCIÓN OPTIMIZADO PARA SAFARI & CHROME
+        // =========================================================
         function runCode() {
             var pName = appState.activePortafolio;
             if(!pName || !appState.portafolios[pName]) {
@@ -1467,7 +1457,19 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             
             var wrapper = document.getElementById('iframe-wrapper');
             if(wrapper) {
+                // DESTRUCCIÓN PROFUNDA DE MEMORIA PARA SAFARI WEBKIT & CHROME
+                var oldIframe = wrapper.querySelector('iframe');
+                if(oldIframe) {
+                    try {
+                        oldIframe.src = 'about:blank';
+                        if(oldIframe.contentWindow && oldIframe.contentWindow.document) {
+                            oldIframe.contentWindow.document.write('');
+                            oldIframe.contentWindow.close();
+                        }
+                    } catch(e) {}
+                }
                 wrapper.innerHTML = ''; 
+                
                 var iframe = document.createElement('iframe');
                 iframe.style.width = '100%';
                 iframe.style.height = '100%';
@@ -1537,27 +1539,29 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         });
 
         document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); runCode(); }
-            if ((e.altKey || e.ctrlKey || e.metaKey) && !e.shiftKey) {
-                if (e.key === '0') { e.preventDefault(); toggleFullscreen(); }
-                if (e.key === '1') { e.preventDefault(); setLayout('code'); }
-                if (e.key === '2') { e.preventDefault(); setLayout('split'); }
-                if (e.key === '3') { e.preventDefault(); setLayout('preview'); }
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) { e.preventDefault(); toggleSearch(); }
+            var activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            var isTyping = (activeTag === 'input' || activeTag === 'textarea' || document.activeElement.closest('.CodeMirror'));
 
-            if (e.shiftKey && !e.ctrlKey && !e.altKey) {
-                var activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-                var isTyping = (activeTag === 'input' || activeTag === 'textarea' || document.activeElement.closest('.CodeMirror'));
-                if (!isTyping) {
-                    if (e.key === 'M' || e.key === 'm') { e.preventDefault(); toggleSidebarPin(); }
-                    if (e.key === 'L' || e.key === 'l') { e.preventDefault(); openCloudModal(); } 
-                    if (e.key === 'P' || e.key === 'p') { e.preventDefault(); openCloudModal(); switchCloudTab('history'); }
-                    if (e.key === '0' || e.code === 'Digit0') { e.preventDefault(); toggleFullscreen(); }
-                    if (e.key === '1' || e.code === 'Digit1') { e.preventDefault(); setLayout('code'); }
-                    if (e.key === '2' || e.code === 'Digit2') { e.preventDefault(); setLayout('split'); }
-                    if (e.key === '3' || e.code === 'Digit3') { e.preventDefault(); setLayout('preview'); }
-                }
+            function matchShortcut(sc, evt) {
+                var pressedKey = evt.key.toLowerCase();
+                var targetKey = sc.key.toLowerCase();
+                var hasCtrl = evt.ctrlKey || evt.metaKey;
+                return (pressedKey === targetKey || evt.code.toLowerCase() === 'digit' + targetKey) &&
+                       (sc.ctrl === hasCtrl) &&
+                       (sc.alt === evt.altKey) &&
+                       (sc.shift === evt.shiftKey);
+            }
+
+            if (matchShortcut(customShortcuts.runCode, e)) { e.preventDefault(); runCode(); }
+            if (matchShortcut(customShortcuts.toggleSearch, e)) { e.preventDefault(); toggleSearch(); }
+
+            if (!isTyping) {
+                if (matchShortcut(customShortcuts.toggleFullscreen, e)) { e.preventDefault(); toggleFullscreen(); }
+                if (matchShortcut(customShortcuts.layoutCode, e)) { e.preventDefault(); setLayout('code'); }
+                if (matchShortcut(customShortcuts.layoutSplit, e)) { e.preventDefault(); setLayout('split'); }
+                if (matchShortcut(customShortcuts.layoutPreview, e)) { e.preventDefault(); setLayout('preview'); }
+                if (matchShortcut(customShortcuts.toggleSidebarPin, e)) { e.preventDefault(); toggleSidebarPin(); }
+                if (matchShortcut(customShortcuts.openCloudModal, e)) { e.preventDefault(); openCloudModal(); }
             }
         });
 
@@ -1646,6 +1650,22 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 if(avatar) avatar.innerText = nDisplay.charAt(0).toUpperCase();
                 if(loggedOutUI) loggedOutUI.style.display = 'none';
                 if(loggedInUI) loggedInUI.style.display = 'flex';
+
+                if(db) {
+                    db.collection("usuarios").doc(currentUserCustom).get().then(function(doc) {
+                        if(doc.exists) {
+                            var d = doc.data();
+                            if(d.ghRepo) ghConfig.repo = d.ghRepo;
+                            if(d.ghBranch) ghConfig.branch = d.ghBranch;
+                            if(d.ghToken) ghConfig.token = d.ghToken;
+                            if(d.shortcuts) {
+                                customShortcuts = d.shortcuts;
+                                localStorage.setItem('slapy_shortcuts', JSON.stringify(customShortcuts));
+                                renderShortcutsUI();
+                            }
+                        }
+                    }).catch(function(e){ console.error("Error leyendo perfil de usuario:", e); });
+                }
             } else {
                 if(loggedOutUI) loggedOutUI.style.display = 'block';
                 if(loggedInUI) loggedInUI.style.display = 'none';
@@ -1655,17 +1675,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             if(adminTab) {
                 if(currentUserCustom === "gab.rmz@icloud.com") { 
                     adminTab.style.display = 'block';
-                    
-                    if(db) {
-                        db.collection("usuarios").doc(currentUserCustom).get().then(function(doc) {
-                            if(doc.exists) {
-                                var d = doc.data();
-                                if(d.ghRepo) ghConfig.repo = d.ghRepo;
-                                if(d.ghBranch) ghConfig.branch = d.ghBranch;
-                                if(d.ghToken) ghConfig.token = d.ghToken;
-                            }
-                        }).catch(function(e){ console.error("Error leyendo token:", e); });
-                    }
                 } else {
                     adminTab.style.display = 'none';
                 }
@@ -2176,7 +2185,74 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             if(lhm) lhm.classList.remove('active'); 
         }
 
+        function getShortcutLabel(sc) {
+            var parts = [];
+            if (sc.ctrl) parts.push("Ctrl");
+            if (sc.alt) parts.push("Alt");
+            if (sc.shift) parts.push("Shift");
+            parts.push(sc.key.toUpperCase());
+            return parts.join(" + ");
+        }
+
+        function renderShortcutsUI() {
+            var container = document.getElementById('shortcuts-list-container');
+            if(!container) return;
+            var html = "";
+            for (var id in customShortcuts) {
+                var sc = customShortcuts[id];
+                html += "<p><b>" + sc.desc + "</b> " +
+                        "<button class='btn' style='border: 1px solid var(--border); padding: 2px 8px; font-family: monospace;' onclick='captureShortcut(\"" + id + "\", this)'>" +
+                        getShortcutLabel(sc) + "</button></p>";
+            }
+            container.innerHTML = html;
+        }
+
+        function captureShortcut(id, btnEl) {
+            btnEl.innerText = "Presiona combinación...";
+            btnEl.style.borderColor = "var(--accent)";
+
+            function handler(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                var key = e.key.toLowerCase();
+                if (["control", "shift", "alt", "meta"].includes(key)) return;
+
+                customShortcuts[id].key = key;
+                customShortcuts[id].ctrl = e.ctrlKey || e.metaKey;
+                customShortcuts[id].alt = e.altKey;
+                customShortcuts[id].shift = e.shiftKey;
+
+                localStorage.setItem('slapy_shortcuts', JSON.stringify(customShortcuts));
+
+                if(db && currentUserCustom !== "") {
+                    db.collection("usuarios").doc(currentUserCustom).set({ shortcuts: customShortcuts }, { merge: true });
+                }
+
+                window.removeEventListener('keydown', handler, true);
+                renderShortcutsUI();
+                showToast("✔ Comando actualizado: " + customShortcuts[id].desc);
+            }
+
+            window.addEventListener('keydown', handler, true);
+        }
+
+        function resetShortcuts() {
+            if(confirm("¿Restablecer todos los comandos a sus valores originales?")) {
+                customShortcuts = JSON.parse(JSON.stringify(defaultShortcuts));
+                localStorage.removeItem('slapy_shortcuts');
+
+                if(db && currentUserCustom !== "") {
+                    db.collection("usuarios").doc(currentUserCustom).set({ shortcuts: customShortcuts }, { merge: true });
+                }
+
+                renderShortcutsUI();
+                showToast("🔄 Comandos restablecidos");
+            }
+        }
+
         function openInfoModal() { 
+            renderShortcutsUI();
             var im = document.getElementById('info-modal');
             if(im) im.classList.add('active'); 
         }
@@ -2185,7 +2261,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             if(im) im.classList.remove('active'); 
         }
         function switchInfo(tab) {
-            var tabs = ['win', 'mac', 'prompt', 'update'];
+            var tabs = ['win', 'update'];
             tabs.forEach(function(t) {
                 var btn = document.getElementById('tab-' + t);
                 var content = document.getElementById('info-' + t);
@@ -2196,14 +2272,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             var targetContent = document.getElementById('info-' + tab);
             if(targetBtn) targetBtn.classList.add('active');
             if(targetContent) targetContent.classList.add('active');
-        }
-        
-        function copyPrompt() {
-            var copyText = document.getElementById("prompt-text");
-            if(copyText) {
-                copyText.select(); document.execCommand("copy");
-                showToast("Prompt copiado al portapapeles");
-            }
         }
 
         function utf8_to_b64(str) {
