@@ -1,6 +1,6 @@
 <!--
-[SLAPY-VERSION: 1.0.46.3]
-[SLAPY-DESC: Optimización de Lecturas en Firestore: Se desvinculó la función loadProjectsFromCloud() del ciclo de actualización de interfaz updateAuthUI() y se introdujo la bandera global hasSyncedCloud. La consulta a la nube ahora solo se ejecuta bajo demanda (botón de sincronizar) o en el primer inicio de sesión, reduciendo drásticamente las lecturas masivas y previniendo el consumo del límite Spark.]
+[SLAPY-VERSION: 1.0.47.1]
+[SLAPY-DESC: Corrección de variables globales de GitHub: Se agregaron las definiciones en memoria de ghConfig, utf8_to_b64 y la sincronización automática del PAT desde Firestore para ejecutar despliegues con el botón Cargar.]
 -->
 <!DOCTYPE html>
 <html lang="es">
@@ -325,7 +325,7 @@
         
         <div id="drop-zone">
             <svg class="svg-icon" style="width:40px; height:40px; margin-bottom:10px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            Suelta los archivos aquí para subirlos al proyecto activo
+            Cargar
         </div>
 
         <!-- EXPLORADOR LATERAL -->
@@ -513,7 +513,7 @@
                 <button class="btn info-tab active" onclick="switchInfo('win')" id="tab-win">Windows</button>
                 <button class="btn info-tab" onclick="switchInfo('mac')" id="tab-mac">Mac OS</button>
                 <button class="btn info-tab" onclick="switchInfo('prompt')" id="tab-prompt">Prompt</button>
-                <button class="btn info-tab" onclick="switchInfo('update')" id="tab-update" style="color:var(--accent); display:none;">⚙️ Admin</button>
+                <button class="btn info-tab" onclick="switchInfo('update')" id="tab-update" style="display:none;">Update</button>
             </div>
             
             <div id="info-win" class="info-content active">
@@ -548,20 +548,11 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             </div>
 
             <div id="info-update" class="info-content">
-                <p style="color:var(--text-bright); font-size:12px; border:none; margin-bottom: 5px;"><strong>Centro de Actualización (Admin)</strong><br>Despliega actualizaciones a GitHub o descárgalas localmente.</p>
+                <textarea id="update-code-input" class="input-dark" style="height: 180px; font-family: monospace; font-size: 11px; margin-bottom: 12px; resize: none; border-radius: 6px; padding: 10px;" placeholder="Pega aquí el código <!DOCTYPE html>... de la nueva versión"></textarea>
                 
-                <div style="display:flex; gap:5px; margin-bottom:5px;">
-                    <input type="text" id="gh-repo" class="input-dark" style="margin-bottom:0;" placeholder="Usuario/Repo (Ej. tucuenta/slapy)" value="The-Slapy/Slapy-Code">
-                    <input type="text" id="gh-branch" class="input-dark" style="margin-bottom:0; width:30%;" placeholder="Rama (Ej. main)" value="main">
-                </div>
-                <input type="password" id="gh-token" class="input-dark" placeholder="GitHub Personal Access Token (PAT)">
-                
-                <textarea id="update-code-input" class="input-dark" style="height:100px; font-family:monospace; font-size:11px; margin-bottom:10px; resize:none;" placeholder="Pega aquí el código <!DOCTYPE html>... de la nueva versión"></textarea>
-                
-                <div style="display:flex; flex-direction:column; gap:5px;">
-                    <button class="btn-primary" style="background: linear-gradient(180deg, #24292e, #1b1f23);" onclick="deployToGitHub()">🚀 Lanzar Actualización a GitHub</button>
-                    <button class="btn-primary" style="background: transparent; border: 1px solid var(--border); color: var(--text-muted);" onclick="applySlapyUpdate()">⬇️ Descargar archivo local (.html)</button>
-                </div>
+                <button class="btn-primary btn-auth-modern" style="margin-top: 0; background: linear-gradient(180deg, #28a745, #1e7e34); border-top-color: #5cd078;" onclick="deployToGitHub()">
+                    🚀 Subir Actualización a GitHub
+                </button>
             </div>
         </div>
     </div>
@@ -632,6 +623,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         var editorFontSize = 14;
         var debounceHistory;
         var hasSyncedCloud = false; // Guard de lecturas para Firestore
+        var ghConfig = { repo: "The-Slapy/Slapy-Code", branch: "main", token: "" };
 
         var appState = { portafolios: {}, activePortafolio: null, activeFile: null };
 
@@ -687,10 +679,9 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
 
         var dmp = new diff_match_patch();
 
-        // Función mágica que reconstruye el código a partir de puros parches
         function getFullCodeAt(historyArr, index) {
             if (!historyArr || historyArr.length === 0) return "";
-            if (historyArr[index].code !== undefined && !historyArr[index].patch) return historyArr[index].code; // Soporte para historiales viejos
+            if (historyArr[index].code !== undefined && !historyArr[index].patch) return historyArr[index].code;
             
             var text = historyArr[0].code || "";
             for (var i = 1; i <= index; i++) {
@@ -714,7 +705,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             var arr = currentPort.localHistory[appState.activeFile];
             var currentCode = editor.getValue();
             
-            // Si es el primer guardado, obligatoriamente guardamos el código base completo
             if (arr.length === 0) {
                 arr.push({ time: new Date().toLocaleTimeString(), desc: desc, code: currentCode, base: true });
                 saveLocalState();
@@ -723,26 +713,23 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
 
             var lastCode = getFullCodeAt(arr, arr.length - 1);
             if (lastCode !== currentCode) {
-                // Generar las diferencias
                 var diff = dmp.diff_main(lastCode, currentCode, true);
                 if (diff.length > 2) dmp.diff_cleanupSemantic(diff);
                 
-                // Crear el parche comprimido
                 var patch_list = dmp.patch_make(lastCode, currentCode, diff);
                 var patch_text = dmp.patch_toText(patch_list);
 
-                if(patch_text.trim() === "") return; // Si no hay cambios reales, no guardamos
+                if(patch_text.trim() === "") return;
 
                 arr.push({ time: new Date().toLocaleTimeString(), desc: desc, patch: patch_text });
                 
-                // Gracias a la compresión, ahora podemos guardar hasta 50 cambios sin sufrir
                 if (arr.length > 50) {
                     var newBase = getFullCodeAt(arr, 1);
                     arr[1] = { time: arr[1].time, desc: arr[1].desc, code: newBase, base: true };
                     arr.shift();
                 }
                 saveLocalState();
-                showToast("⏱️ Historial guardado: " + desc); // <-- AVISO VISUAL
+                showToast("⏱️ Historial guardado: " + desc);
             }
         }
 
@@ -775,8 +762,8 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                     filesRead++;
                     
                     if(filesRead === files.length) { 
-                        appState.portafolios[pName].isOpen = true; // Auto-expande la carpeta
-                        appState.portafolios[pName].isGhost = false; // Quita el modo fantasma si lo tuviera
+                        appState.portafolios[pName].isOpen = true;
+                        appState.portafolios[pName].isGhost = false;
                         saveLocalState(); 
                         renderExplorer(); 
                         openFile(pName, f.name); 
@@ -847,7 +834,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                                 filesRead++;
                                 
                                 if(filesRead === filesToRead.length) {
-                                    appState.portafolios[pName].isOpen = true; // Auto-expande la carpeta
+                                    appState.portafolios[pName].isOpen = true;
                                     appState.portafolios[pName].isGhost = false;
                                     saveLocalState(); 
                                     renderExplorer(); 
@@ -912,7 +899,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 }
 
                 var html = "";
-                // NUEVOS ICONOS DINÁMICOS DE CARPETA Y FAVORITOS
                 var svgFolderGhost = "<svg class='svg-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'></path></svg>";
                 var svgFolderLocal = "<svg class='svg-icon' viewBox='0 0 24 24' fill='currentColor' stroke='none'><path d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'></path></svg>";
                 var svgFile = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'></path><polyline points='14 2 14 8 20 8'></polyline></svg>";
@@ -929,7 +915,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 var locals = [];
                 var clouds = [];
 
-                // Categorizar los proyectos
                 for (var pName in appState.portafolios) {
                     var pData = appState.portafolios[pName];
                     if(!pData) continue;
@@ -938,13 +923,11 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                     else locals.push(pName);
                 }
 
-                // Orden alfabético
                 var sortAlpha = function(a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); };
                 favorites.sort(sortAlpha);
                 locals.sort(sortAlpha);
                 clouds.sort(sortAlpha);
 
-                // Función auxiliar para dibujar carpetas y evitar repetir código
                 function buildFolderHTML(list) {
                     var out = "";
                     list.forEach(function(pName) {
@@ -1017,7 +1000,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                     return out;
                 }
 
-                // Ensamblar las 3 secciones
                 if(favorites.length > 0) {
                     html += "<div style='padding: 10px 15px 5px; font-size: 10px; color: #e2b93b; font-weight: bold; letter-spacing: 1px;'>★ FAVORITOS</div>";
                     html += buildFolderHTML(favorites);
@@ -1191,7 +1173,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             var pData = appState.portafolios[pName];
             if(!pData) return;
             
-            // MAGIA: Si el proyecto es fantasma, bloqueamos silenciosamente sin alertas
             if(pData.isGhost) {
                 return;
             }
@@ -1290,16 +1271,13 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 if(appState.portafolios[pName].files && appState.portafolios[pName].files[fName] !== undefined) return;
                 if(!appState.portafolios[pName].files) appState.portafolios[pName].files = {};
                 
-                appState.portafolios[pName].isOpen = true; // Auto-expande la carpeta
+                appState.portafolios[pName].isOpen = true;
                 appState.portafolios[pName].isGhost = false;
                 
                 appState.portafolios[pName].files[fName] = ""; openFile(pName, fName);
             }
         }
 
-        // =========================================================
-        // MOTOR SPLIT MEJORADO (ATRIBUTOS + FALLBACK ESTRUCTURAL)
-        // =========================================================
         function toggleSplitMode() {
             var pName = appState.activePortafolio;
             if(!pName || !appState.portafolios[pName]) return;
@@ -1311,7 +1289,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             var htmlFileName = appState.activeFile;
             var pData = appState.portafolios[pName];
             if(!pData.splitMap) pData.splitMap = {};
-            if(!pData.splitMeta) pData.splitMeta = {}; // Diccionario para atributos
+            if(!pData.splitMeta) pData.splitMeta = {};
             if(!pData.files) pData.files = {};
 
             if(!htmlFileName || !htmlFileName.endsWith('.html')) {
@@ -1347,18 +1325,16 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 var newChildren = [];
                 var baseName = htmlFileName.replace('.html', '');
                 
-                // Extrae CSS capturando atributos (group 1)
                 var styleTagRegex = /<style([^>]*)>([\s\S]*?)<\/style>/gi;
                 htmlCode = htmlCode.replace(styleTagRegex, function(m, attrs, inner) {
                     var contenido = inner.trim(); if(contenido === "") return m; 
                     cssCount++; var fName = baseName + "-style" + (cssCount===1?"":cssCount) + ".css";
                     pData.files[fName] = contenido; newChildren.push(fName);
-                    pData.splitMeta[fName] = { attrs: attrs || "" }; // GUARDA ATRIBUTOS
+                    pData.splitMeta[fName] = { attrs: attrs || "" };
                     if(!pData.openTabs.includes(fName)) pData.openTabs.push(fName);
-                    return "<!-- [SLAPY-SPLIT:" + fName + "] -->";
+                    return "";
                 });
 
-                // Extrae JS/JSON capturando atributos (group 1)
                 var scriptTagRegex = /<script([^>]*)>([\s\S]*?)<\/script>/gi;
                 htmlCode = htmlCode.replace(scriptTagRegex, function(m, attrs, inner) {
                     if (attrs.toLowerCase().includes('src=')) return m;
@@ -1374,9 +1350,9 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                     }
                     
                     pData.files[fName] = contenido; newChildren.push(fName);
-                    pData.splitMeta[fName] = { attrs: attrs || "" }; // GUARDA ATRIBUTOS
+                    pData.splitMeta[fName] = { attrs: attrs || "" };
                     if(!pData.openTabs.includes(fName)) pData.openTabs.push(fName);
-                    return "<!-- [SLAPY-SPLIT:" + fName + "] -->";
+                    return "";
                 });
 
                 if(newChildren.length > 0) {
@@ -1389,7 +1365,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 }
 
             } else { 
-                // MODO UN-SPLIT RESTAURANDO ATRIBUTOS Y POSICIONAMIENTO
                 splitChildren.forEach(function(f) {
                     var content = pData.files[f] || "";
                     var meta = pData.splitMeta && pData.splitMeta[f] ? pData.splitMeta[f] : { attrs: "" };
@@ -1399,7 +1374,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                     if(f.endsWith('.css')) {
                         fullBlock = '<style' + attrs + '>\n' + content + '\n</st' + 'yle>'; 
                     } else if(f.endsWith('.json')) {
-                        // Resguardo por si el id o type no estaban en los atributos originales guardados
                         if(!attrs.toLowerCase().includes('type=')) attrs = ' type="application/json"' + attrs;
                         if(!attrs.toLowerCase().includes('id=')) attrs += ' id="' + f.split('.')[0] + '"';
                         fullBlock = '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>';
@@ -1412,7 +1386,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                     if(markerRegex.test(htmlCode)) {
                         htmlCode = htmlCode.replace(markerRegex, function() { return fullBlock; });
                     } else {
-                        // Fallback Seguro anti-inyección
                         if(f.endsWith('.css')) {
                             if(htmlCode.indexOf('</head>') !== -1) htmlCode = htmlCode.replace('</head>', function() { return fullBlock + '\n</head>'; });
                             else htmlCode = fullBlock + '\n' + htmlCode;
@@ -1436,9 +1409,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             }
         }
 
-        // =========================================================
-        // MOTOR DE EJECUCIÓN MEJORADO (ATRIBUTOS Y SEGREGACIÓN)
-        // =========================================================
         function runCode() {
             var pName = appState.activePortafolio;
             if(!pName || !appState.portafolios[pName]) {
@@ -1553,17 +1523,14 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             setTimeout(function() { if(editor) editor.refresh(); }, 300);
         }
 
-        // Radar automático para el mouse
         document.addEventListener('mousemove', function(e) {
-            if(isSidebarPinned) return; // Si está fijado, el radar no hace nada
+            if(isSidebarPinned) return;
             var sb = document.getElementById('sidebar');
             if(!sb) return;
             
-            // Si el mouse toca los primeros 20 píxeles del lado izquierdo, saca el menú
             if(e.clientX <= 20 && !sb.classList.contains('visible')) {
                 sb.classList.add('visible');
             } 
-            // Si el mouse se aleja más allá del ancho del menú (280px + un margen), lo esconde
             else if(e.clientX > 285 && sb.classList.contains('visible')) {
                 sb.classList.remove('visible');
             }
@@ -1595,13 +1562,11 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         });
 
         function offloadProject(pName, e) {
-            e.stopPropagation(); // Evita que la carpeta se abra/cierre
+            e.stopPropagation();
             var pData = appState.portafolios[pName];
             if(!pData || pData.isGhost) return;
             
             if(confirm("⚠️ ¿Deseas eliminar la descarga local de '" + pName + "'?\n\nEsto liberará espacio en tu navegador. Los archivos volverán a estar vacíos hasta que hagas 'Get' de nuevo.\n\n(Asegúrate de haber hecho 'Push' si tenías cambios recientes).")) {
-                
-                // Magia: Convertir todos los archivos a strings vacíos para liberar Megabytes
                 for(var f in pData.files) {
                     pData.files[f] = "";
                 }
@@ -1609,7 +1574,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 pData.isGhost = true;
                 pData.isOpen = false;
                 pData.localHistory = {}; 
-                pData.openTabs = []; // Cerramos sus pestañas
+                pData.openTabs = [];
                 
                 if(appState.activePortafolio === pName) {
                     appState.activeFile = null;
@@ -1628,12 +1593,11 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 if(savedData && typeof savedData === 'object') {
                     appState = savedData;
                 } else {
-                    // MIGRACIÓN: Rescate automático de localStorage
                     try {
                         var oldData = localStorage.getItem('slapy_state_v34');
                         if(oldData) {
                             appState = JSON.parse(oldData);
-                            localforage.setItem('slapy_state_v34', appState); // Pasa todo a IndexedDB
+                            localforage.setItem('slapy_state_v34', appState);
                         }
                     } catch(e) { console.error(e); }
                 }
@@ -1682,27 +1646,23 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 if(avatar) avatar.innerText = nDisplay.charAt(0).toUpperCase();
                 if(loggedOutUI) loggedOutUI.style.display = 'none';
                 if(loggedInUI) loggedInUI.style.display = 'flex';
-                // OPTIMIZACIÓN: loadProjectsFromCloud no se ejecuta automáticamente en cada render UI
             } else {
                 if(loggedOutUI) loggedOutUI.style.display = 'block';
                 if(loggedInUI) loggedInUI.style.display = 'none';
             }
 
-            // SISTEMA DE ROLES Y NUBE SECRETA: Admin solo para el Jefe
             var adminTab = document.getElementById('tab-update');
             if(adminTab) {
-                // REEMPLAZA ESTE CORREO POR EL TUYO REAL DE FIREBASE
                 if(currentUserCustom === "gab.rmz@icloud.com") { 
                     adminTab.style.display = 'block';
                     
-                    // Llama al token secreto desde Firebase
                     if(db) {
                         db.collection("usuarios").doc(currentUserCustom).get().then(function(doc) {
                             if(doc.exists) {
                                 var d = doc.data();
-                                if(d.ghRepo) document.getElementById('gh-repo').value = d.ghRepo;
-                                if(d.ghBranch) document.getElementById('gh-branch').value = d.ghBranch;
-                                if(d.ghToken) document.getElementById('gh-token').value = d.ghToken;
+                                if(d.ghRepo) ghConfig.repo = d.ghRepo;
+                                if(d.ghBranch) ghConfig.branch = d.ghBranch;
+                                if(d.ghToken) ghConfig.token = d.ghToken;
                             }
                         }).catch(function(e){ console.error("Error leyendo token:", e); });
                     }
@@ -1717,9 +1677,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             setTimeout(runCode, 300);
         });
 
-        // =========================================================
-        // AUTENTICACIÓN FIREBASE AUTH
-        // =========================================================
         var authMode = 'login';
         
         function openLoginModal() { 
@@ -1754,7 +1711,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         function finishLogin(email, displayName, isLocalFallback) {
             currentUserCustom = email;
             currentDisplayName = displayName;
-            hasSyncedCloud = false; // Reset de sincronización al cambiar/entrar usuario
+            hasSyncedCloud = false;
             localStorage.setItem('slapy_logged_user', email);
             localStorage.setItem('slapy_display_name', displayName);
             document.getElementById('auth-error').innerText = "";
@@ -1820,7 +1777,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
 
         function logoutCustom() { 
             currentUserCustom = ""; currentDisplayName = "";
-            hasSyncedCloud = false; // Reset de bandera
+            hasSyncedCloud = false;
             localStorage.removeItem('slapy_logged_user'); localStorage.removeItem('slapy_display_name'); 
             
             if(typeof firebase !== 'undefined' && firebase.auth) {
@@ -1840,9 +1797,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             showToast("Sesión cerrada");
         }
 
-        // =========================================================
-        // GESTIÓN DE CUENTA Y NUBE
-        // =========================================================
         function openAccountModal() {
             var am = document.getElementById('account-modal');
             if(am) {
@@ -1864,22 +1818,17 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             for(var pName in appState.portafolios) {
                 var pData = appState.portafolios[pName];
                 
-                // Convertir a fantasma todos menos el activo
                 if(pName !== keepProject && !pData.isGhost) {
                     for(var f in pData.files) pData.files[f] = "";
                     pData.isGhost = true;
                     pData.isOpen = false;
                     pData.openTabs = [];
                 }
-                
-                // Purgar el historial local de TODOS los proyectos para liberar RAM
                 pData.localHistory = {};
             }
             
             saveLocalState();
             showToast("🧹 Limpiando RAM y recargando...");
-            
-            // Recarga limpia para forzar al navegador a liberar memoria
             setTimeout(function() { window.location.reload(); }, 1000);
         }
 
@@ -1917,7 +1866,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         }
 
         function openCloudModal(mode) {
-            mode = mode || 'history'; // Por defecto abrimos como Historial (Nube inferior)
+            mode = mode || 'history';
             
             if (currentUserCustom === "") { alert("Inicia sesión primero para usar la nube."); openLoginModal(); return; }
             var pName = appState.activePortafolio;
@@ -1941,10 +1890,10 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             
             var tabSave = document.getElementById('tab-cloud-save');
             if (mode === 'history') {
-                if(tabSave) tabSave.style.display = 'none'; // Ocultamos la pestaña de Push
+                if(tabSave) tabSave.style.display = 'none';
                 switchCloudTab('history');
             } else {
-                if(tabSave) tabSave.style.display = 'block'; // Mostramos la pestaña de Push
+                if(tabSave) tabSave.style.display = 'block';
                 switchCloudTab('save');
             }
         }
@@ -2065,15 +2014,12 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             if(!pData) return;
             if(pData.isGhost) { showToast("❌ No puedes hacer Push de un proyecto vacío (fantasma). Haz Get primero."); return; }
             
-            // Convertimos el proyecto clickeado en el activo
             appState.activePortafolio = pName;
             
-            // Validamos que haya un archivo activo válido para que el modal lea la versión
             if(!appState.activeFile || pData.files[appState.activeFile] === undefined) {
                 appState.activeFile = Object.keys(pData.files)[0] || "index.html";
             }
             
-            // Abrimos el modal de la nube en MODO PUSH (Guardar)
             openCloudModal('save');
         }
 
@@ -2101,7 +2047,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                         }
                         var pData = appState.portafolios[pName];
                         
-                        // PARCHE DE AUTO-SANACIÓN PARA ARCHIVOS CORRUPTOS DE LA NUBE
                         if(parsedData.files !== undefined) {
                             pData.files = parsedData.files;
                         } else if(parsedData.ffiles !== undefined) {
@@ -2134,14 +2079,14 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         }
 
         function forceSyncCloud() {
-            hasSyncedCloud = false; // Fuerza la consulta reiniciando el guard
+            hasSyncedCloud = false;
             showToast("Sincronizando lista desde la nube...");
             loadProjectsFromCloud();
         }
 
         function loadProjectsFromCloud() {
             if(currentUserCustom === "" || !db || hasSyncedCloud) return;
-            hasSyncedCloud = true; // Previene lecturas innecesarias en el día
+            hasSyncedCloud = true;
             
             db.collection("proyectos").where("usuario", "==", currentUserCustom).get().then(function(snap) {
                 var loadedCount = 0;
@@ -2149,7 +2094,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                 snap.forEach(function(doc) {
                     var pName = doc.id;
                     
-                    // Si el proyecto ya existe y NO es fantasma, lo respetamos y NO lo sobreescribimos
                     if(appState.portafolios[pName] && !appState.portafolios[pName].isGhost) {
                         return; 
                     }
@@ -2157,7 +2101,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                     try { 
                         var parsedData = JSON.parse(doc.data().archivos_json); 
                         
-                        // AUTO-SANACIÓN PARA MODO GHOST
                         var filesObj;
                         if(parsedData.files !== undefined) filesObj = parsedData.files;
                         else if(parsedData.ffiles !== undefined) filesObj = parsedData.ffiles;
@@ -2166,7 +2109,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                             delete filesObj.splitMap; delete filesObj.splitMeta; delete filesObj.isFavorite; delete filesObj.isGhost;
                         }
                         
-                        // Magia Ghost: Creamos los archivos vacíos para no gastar memoria
                         var emptyFiles = {};
                         for(var f in filesObj) emptyFiles[f] = "";
                         
@@ -2178,7 +2120,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                             splitMap: parsedData.splitMap || {}, 
                             splitMeta: parsedData.splitMeta || {},
                             isFavorite: parsedData.isFavorite || false,
-                            isGhost: true // Marcador Fantasma
+                            isGhost: true
                         };
                         loadedCount++;
                     } catch(e) {}
@@ -2210,7 +2152,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
                     var btn = document.createElement("button"); btn.className = "btn"; btn.innerText = "Restaurar Aquí";
                     btn.style.border = "1px solid var(--border)";
                     
-                    // RECONSTRUYE EL CÓDIGO AL VUELO PARA ESTE PUNTO EN EL TIEMPO
                     var codeToRestore = getFullCodeAt(arr, i);
 
                     btn.onclick = (function(code) {
@@ -2265,99 +2206,51 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             }
         }
 
-        // Convert string to base64 preserving utf-8
         function utf8_to_b64(str) {
             return window.btoa(unescape(encodeURIComponent(str)));
         }
 
-        function applySlapyUpdate() {
-            var code = document.getElementById('update-code-input').value;
-            if(!code || !code.includes('SLAPY-VERSION')) {
-                showToast("❌ Código inválido. Faltan etiquetas de versión."); return;
-            }
-            var vMatch = code.match(/\[SLAPY-VERSION:\s*(.*?)\]/i);
-            var version = vMatch ? vMatch[1].trim() : "update";
-            
-            var blob = new Blob([code], { type: 'text/html' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = "Slapy_v" + version + ".html";
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            showToast("✅ Actualización v" + version + " empaquetada.");
-            document.getElementById('update-code-input').value = "";
-            closeInfoModal();
-        }
-
         function deployToGitHub() {
-            var repo = document.getElementById('gh-repo').value.trim();
-            var branch = document.getElementById('gh-branch').value.trim() || 'main';
-            var token = document.getElementById('gh-token').value.trim();
+            var repo = ghConfig.repo;
+            var branch = ghConfig.branch;
+            var token = ghConfig.token;
             var code = document.getElementById('update-code-input').value;
 
-            if(!repo || !token || !code) {
-                showToast("❌ Faltan datos (Repo, Token o Código)."); return;
-            }
-            if(!code.includes('SLAPY-VERSION')) {
-                showToast("❌ Código inválido. Faltan etiquetas de versión."); return;
-            }
+            if(!token) { showToast("❌ Error: No se encontró el Token en la nube."); return; }
+            if(!code || !code.includes('SLAPY-VERSION')) { showToast("❌ Código inválido. Faltan etiquetas de versión."); return; }
 
             var vMatch = code.match(/\[SLAPY-VERSION:\s*(.*?)\]/i);
             var version = vMatch ? vMatch[1].trim() : "update";
-
-            // Guardar configuración encriptada en la Nube (Firestore)
-            if(db && currentUserCustom !== "") {
-                db.collection("usuarios").doc(currentUserCustom).set({
-                    ghRepo: repo, ghBranch: branch, ghToken: token
-                }, { merge: true });
-            }
 
             showToast("Conectando con GitHub... ⏳");
-            
             var apiUrl = "https://api.github.com/repos/" + repo + "/contents/index.html?ref=" + branch;
             
-            // 1. Obtener el SHA actual de index.html
-            fetch(apiUrl, {
-                headers: { "Authorization": "token " + token, "Accept": "application/vnd.github.v3+json" }
-            })
+            fetch(apiUrl, { headers: { "Authorization": "token " + token, "Accept": "application/vnd.github.v3+json" } })
             .then(res => {
                 if(!res.ok && res.status !== 404) throw new Error("Error obteniendo info del repositorio.");
                 return res.status === 404 ? { sha: null } : res.json();
             })
             .then(data => {
-                // 2. Hacer PUT con el nuevo código
-                var sha = data.sha;
-                var payload = {
-                    message: "Deploy Slapy v" + version + " via Slapy Admin",
-                    content: utf8_to_b64(code),
-                    branch: branch
-                };
-                if(sha) payload.sha = sha;
+                var payload = { message: "Deploy Slapy v" + version, content: utf8_to_b64(code), branch: branch };
+                if(data.sha) payload.sha = data.sha;
 
                 return fetch("https://api.github.com/repos/" + repo + "/contents/index.html", {
-                    method: "PUT",
-                    headers: { "Authorization": "token " + token, "Accept": "application/vnd.github.v3+json" },
+                    method: "PUT", headers: { "Authorization": "token " + token, "Accept": "application/vnd.github.v3+json" },
                     body: JSON.stringify(payload)
                 });
             })
             .then(res => {
-                if(!res.ok) throw new Error("No se pudo hacer commit en GitHub. Revisa tus credenciales.");
+                if(!res.ok) throw new Error("Fallo al subir a GitHub. Revisa tu Token.");
                 return res.json();
             })
             .then(data => {
-                showToast("✅ ¡Deploy exitoso! GitHub Pages se actualizará en breve.");
+                showToast("✅ ¡Deploy exitoso! v" + version + " subida a GitHub Pages.");
                 document.getElementById('update-code-input').value = "";
                 closeInfoModal();
             })
-            .catch(err => {
-                showToast("❌ Error: " + err.message);
-                console.error(err);
-            });
+            .catch(err => { showToast("❌ Error: " + err.message); console.error(err); });
         }
 
-        // Lector dinámico de versión actual
         setTimeout(function() {
             var versionElement = document.getElementById('slapy-version-display');
             if(!versionElement) return;
@@ -2374,7 +2267,7 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
         }, 800);
 
         var searchState = { marks: [], index: -1, activeMark: null };
-        var isBlockSearch = false; // Estado del modo fragmento
+        var isBlockSearch = false;
 
         function toggleSearch() { 
             if(!editor) { showToast("Editor no inicializado"); return; }
@@ -2425,21 +2318,17 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             if(!q) return;
 
             if (isBlockSearch && qEnd) {
-                // BÚSQUEDA POR FRAGMENTO (Desde -> Hasta)
                 var cursor = editor.getSearchCursor(q);
                 while(cursor.findNext()) {
                     var startPos = cursor.from();
-                    // Inicia un nuevo cursor buscando el final, justo después del inicio encontrado
                     var endCursor = editor.getSearchCursor(qEnd, cursor.to());
                     if(endCursor.findNext()) {
                         var endPos = endCursor.to();
                         searchState.marks.push(editor.markText(startPos, endPos, {className: 'cm-matchhighlight'}));
-                        // Avanzamos el cursor principal para no solapar búsquedas
                         cursor = editor.getSearchCursor(q, endPos);
                     }
                 }
             } else {
-                // BÚSQUEDA NORMAL
                 var cursor = editor.getSearchCursor(q);
                 while(cursor.findNext()) {
                     searchState.marks.push(editor.markText(cursor.from(), cursor.to(), {className: 'cm-matchhighlight'}));
@@ -2463,7 +2352,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             if(searchState.activeMark) searchState.activeMark.clear();
             searchState.activeMark = editor.markText(pos.from, pos.to, {className: 'cm-match-active'});
             
-            // LA SORPRESA: Seleccionamos el texto en el editor. ¡Listo para ser borrado!
             editor.setSelection(pos.from, pos.to);
             
             editor.scrollIntoView({from: pos.from, to: pos.to}, 100);
@@ -2479,7 +2367,6 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             var rep = document.getElementById('live-replace-input').value; 
             var pos = searchState.marks[searchState.index].find(); 
             if(!pos) return;
-            // replaceRange usará los límites pos.from y pos.to (reemplazará todo el bloque)
             editor.replaceRange(rep, pos.from, pos.to, 'replace'); 
             updateSearch(true); 
         }
@@ -2489,13 +2376,11 @@ Actúa como un desarrollador experto. Al generar o modificar el código, debes i
             var q = document.getElementById('live-search-input').value; 
             var rep = document.getElementById('live-replace-input').value; 
             if(!q) return;
-            // Si no es modo bloque, hacemos un replace global rápido
             if (!isBlockSearch) {
                 var content = editor.getValue(); isSyncing = true; 
                 editor.setValue(content.split(q).join(rep));
                 pushLocalHistory("Reemplazo de Todo"); isSyncing = false; updateSearch(true);
             } else {
-                // Si es modo bloque, reemplazamos marcadores de atrás hacia adelante
                 isSyncing = true;
                 for (var i = searchState.marks.length - 1; i >= 0; i--) {
                     var pos = searchState.marks[i].find();
