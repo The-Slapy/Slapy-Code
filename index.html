@@ -1,7 +1,7 @@
 <!--
-[SLAPY-VERSION: 1.1.0.1]
-[SLAPY-TITLE: Refinamiento visual profundo de la interfaz moderna]
-[SLAPY-DESC: Profundiza el rediseño visual de SLAPY para lograr una apariencia claramente moderna, propia y consistente con el objetivo visual aprobado, sin alterar estructura ni funcionalidad.]
+[SLAPY-VERSION: 1.1.1.0]
+[SLAPY-TITLE: Preview aislado con almacenamiento virtual]
+[SLAPY-DESC: Corrige la ejecución de aplicaciones que usan Web Storage dentro del preview mediante almacenamiento virtual aislado, preservando el sandbox y las mejoras del explorador publicadas en 1.1.0.2.]
 -->
 <!DOCTYPE html>
 <html lang="es">
@@ -1054,7 +1054,32 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
         }
-</style>
+
+        /* =========================================================
+           SLAPY 1.1.0.2 — EXPLORER / PROJECTS REFINEMENT
+           ========================================================= */
+        .tree { overflow-x: hidden; }
+        .folder-row, .file-row { min-width: 0; gap: 5px; overflow: hidden; }
+        .folder-name, .file-name, .explorer-label { min-width: 0; flex: 1 1 auto; display:flex; align-items:center; gap:6px; overflow:hidden; }
+        .folder-name > span:last-child, .file-name > span:last-child, .explorer-label > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .folder-name > span:first-child { flex:0 0 auto; }
+        .file-list { min-width:0; overflow:hidden; }
+        .subfolder-node { min-width:0; margin-left:7px; }
+        .actions { flex:0 0 auto; align-items:center; gap:1px; margin-left:auto; white-space:nowrap; }
+        .actions button { width:23px; height:23px; min-width:23px; padding:4px; justify-content:center; border-radius:6px; color:var(--text-muted); }
+        .actions button .svg-icon { width:13px; height:13px; stroke-width:1.8; }
+        .actions button:hover { color:var(--accent-strong); background:var(--accent-soft); }
+        .actions .del:hover { color:var(--danger) !important; background:rgba(239,68,68,.10); }
+        .cloud-project-action { color:var(--accent-strong) !important; }
+        .global-info button { min-height:35px; padding:7px 12px; border-radius:10px; border:1px solid var(--border-soft); background:var(--surface-raised); color:var(--text-main); box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+        .global-info button:hover { border-color:rgba(120,178,255,.44); background:var(--bg-hover); color:var(--text-bright); }
+        .sidebar { transition:transform .22s cubic-bezier(.2,.8,.2,1), opacity .16s ease, box-shadow .20s ease, border-color .20s ease, width .2s ease; }
+        .sidebar.unpinned { transform:translate3d(-100%,0,0); opacity:.98; box-shadow:0 0 0 rgba(0,0,0,0); border-right-color:transparent; will-change:transform; }
+        .sidebar.unpinned.visible { transform:translate3d(0,0,0); opacity:1; box-shadow:9px 0 30px rgba(0,0,0,.30); border-right-color:var(--border-soft); }
+        @media (pointer: coarse) { .actions { display:flex; } .actions button { width:25px; height:25px; min-width:25px; } }
+        @media (prefers-reduced-motion: reduce) { .sidebar, .sidebar.unpinned, .sidebar.unpinned.visible { transition:none !important; } }
+
+    </style>
 </head>
 <body>
 
@@ -1161,10 +1186,10 @@
                         <svg class="svg-icon" viewBox="0 0 24 24" style="width:12px; height:12px; opacity:0.6;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                     </div>
                     <div class="user-actions">
-                        <button class="refresh-icon" onclick="forceSyncCloud()" title="Sincronizar Proyectos">
+                        <button class="refresh-icon cloud-only-control" onclick="forceSyncCloud()" title="Sincronizar Proyectos">
                             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
                         </button>
-                        <button class="cloud-icon" onclick="openCloudModal()" title="Gestión de Nube (Shift + L)">
+                        <button class="cloud-icon cloud-only-control" onclick="openCloudModal()" title="Gestión de Nube (Shift + L)">
                             <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>
                         </button>
                         <button class="logout-icon" onclick="logoutCustom()" title="Cerrar Sesión">
@@ -1325,6 +1350,252 @@
     <!-- SCRIPTS CORE DE LA APLICACIÓN -->
     <script>
         var STATE_KEY_BASE = 'slapy_state_v34';
+        var PREVIEW_STORAGE_PREFIX = 'slapy_preview_storage_v1';
+        var PREVIEW_STORAGE_LIMITS = {
+            key: 256,
+            value: 1024 * 1024,
+            total: 4 * 1024 * 1024
+        };
+        var activePreviewBridge = null;
+        var previewStorageListenerInstalled = false;
+        var previewRunSequence = 0;
+
+        function getPreviewStorageKey(projectName) {
+            var userScope = (currentUserCustom || 'guest').toLowerCase();
+            return PREVIEW_STORAGE_PREFIX + '::' + encodeURIComponent(userScope) + '::' + encodeURIComponent(String(projectName));
+        }
+
+        function normalizePreviewSnapshot(value) {
+            var clean = {};
+            var total = 0;
+            if(!value || typeof value !== 'object' || Array.isArray(value)) return clean;
+            Object.keys(value).some(function(rawKey) {
+                var key = String(rawKey);
+                var item = String(value[rawKey]);
+                var size = (key.length + item.length) * 2;
+                if(key.length > PREVIEW_STORAGE_LIMITS.key || item.length > PREVIEW_STORAGE_LIMITS.value || total + size > PREVIEW_STORAGE_LIMITS.total) return false;
+                clean[key] = item;
+                total += size;
+                return false;
+            });
+            return clean;
+        }
+
+        function loadPreviewSnapshot(storageKey) {
+            if(typeof localforage !== 'undefined') {
+                return localforage.getItem(storageKey).then(normalizePreviewSnapshot).catch(function() { return {}; });
+            }
+            try {
+                return Promise.resolve(normalizePreviewSnapshot(safeParseJSON(localStorage.getItem(storageKey), {})));
+            } catch(e) {
+                return Promise.resolve({});
+            }
+        }
+
+        function persistPreviewSnapshot(storageKey, snapshot) {
+            var clean = normalizePreviewSnapshot(snapshot);
+            if(typeof localforage !== 'undefined') return localforage.setItem(storageKey, clean);
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(clean));
+                return Promise.resolve();
+            } catch(e) {
+                return Promise.reject(e);
+            }
+        }
+
+        function previewSnapshotSize(snapshot) {
+            return Object.keys(snapshot).reduce(function(total, key) {
+                return total + (key.length + String(snapshot[key]).length) * 2;
+            }, 0);
+        }
+
+        function flushActivePreviewStorage() {
+            if(!activePreviewBridge || !activePreviewBridge.dirty) return Promise.resolve();
+            if(activePreviewBridge.persistTimer) {
+                clearTimeout(activePreviewBridge.persistTimer);
+                activePreviewBridge.persistTimer = null;
+            }
+            activePreviewBridge.dirty = false;
+            return persistPreviewSnapshot(activePreviewBridge.storageKey, activePreviewBridge.snapshot).catch(function(err) {
+                showToast('Preview: no se pudo persistir el almacenamiento virtual.');
+                console.warn('Preview storage persistence failed:', err);
+            });
+        }
+
+        function queuePreviewStoragePersist() {
+            if(!activePreviewBridge) return;
+            activePreviewBridge.dirty = true;
+            if(activePreviewBridge.persistTimer) clearTimeout(activePreviewBridge.persistTimer);
+            activePreviewBridge.persistTimer = setTimeout(function() {
+                if(!activePreviewBridge) return;
+                var bridge = activePreviewBridge;
+                bridge.persistTimer = null;
+                bridge.dirty = false;
+                persistPreviewSnapshot(bridge.storageKey, bridge.snapshot).catch(function(err) {
+                    showToast('Preview: no se pudo persistir el almacenamiento virtual.');
+                    console.warn('Preview storage persistence failed:', err);
+                });
+            }, 120);
+        }
+
+        function handlePreviewMessage(event) {
+            var bridge = activePreviewBridge;
+            var data = event && event.data;
+            if(!bridge || !data || typeof data !== 'object') return;
+            if(event.source !== bridge.iframe.contentWindow || data.token !== bridge.token) return;
+
+            if(data.type === 'SLAPY_PREVIEW_DIAGNOSTIC') {
+                var message = String(data.message || 'Error desconocido').slice(0, 300);
+                showToast('Preview: ' + message);
+                return;
+            }
+            if(data.type !== 'SLAPY_PREVIEW_STORAGE') return;
+            if(data.op !== 'set' && data.op !== 'remove' && data.op !== 'clear') return;
+
+            var next = Object.assign({}, bridge.snapshot);
+            if(data.op === 'clear') {
+                next = {};
+            } else {
+                var key = String(data.key);
+                if(key.length > PREVIEW_STORAGE_LIMITS.key) return;
+                if(data.op === 'remove') {
+                    delete next[key];
+                } else {
+                    var value = String(data.value);
+                    if(value.length > PREVIEW_STORAGE_LIMITS.value) return;
+                    next[key] = value;
+                    if(previewSnapshotSize(next) > PREVIEW_STORAGE_LIMITS.total) return;
+                }
+            }
+            bridge.snapshot = next;
+            queuePreviewStoragePersist();
+        }
+
+        function ensurePreviewStorageListener() {
+            if(previewStorageListenerInstalled) return;
+            window.addEventListener('message', handlePreviewMessage, false);
+            previewStorageListenerInstalled = true;
+        }
+
+        function createPreviewToken() {
+            try {
+                var bytes = new Uint32Array(4);
+                crypto.getRandomValues(bytes);
+                return Array.prototype.map.call(bytes, function(value) { return value.toString(36); }).join('-');
+            } catch(e) {
+                return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+            }
+        }
+
+        function serializeForInlineScript(value) {
+            return JSON.stringify(value)
+                .replace(/</g, '\\u003c')
+                .replace(/\u2028/g, '\\u2028')
+                .replace(/\u2029/g, '\\u2029');
+        }
+
+        function previewStorageRuntime(snapshot, token, limits) {
+            'use strict';
+            function notify(type, payload) {
+                var message = { type: type, token: token };
+                Object.keys(payload || {}).forEach(function(key) { message[key] = payload[key]; });
+                parent.postMessage(message, '*');
+            }
+            function quotaError() {
+                try { return new DOMException('Preview storage quota exceeded', 'QuotaExceededError'); }
+                catch(e) { var err = new Error('Preview storage quota exceeded'); err.name = 'QuotaExceededError'; return err; }
+            }
+            function sizeOf(data) {
+                return Object.keys(data).reduce(function(total, key) {
+                    return total + (key.length + data[key].length) * 2;
+                }, 0);
+            }
+            function makeStorage(seed, persistent) {
+                var data = Object.create(null);
+                Object.keys(seed || {}).forEach(function(key) { data[String(key)] = String(seed[key]); });
+                var storage = {
+                    key: function(index) {
+                        index = Math.trunc(Number(index) || 0);
+                        return index >= 0 && index < Object.keys(data).length ? Object.keys(data)[index] : null;
+                    },
+                    getItem: function(key) {
+                        key = String(key);
+                        return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : null;
+                    },
+                    setItem: function(key, value) {
+                        key = String(key); value = String(value);
+                        if(key.length > limits.key || value.length > limits.value) throw quotaError();
+                        var next = Object.assign(Object.create(null), data); next[key] = value;
+                        if(sizeOf(next) > limits.total) throw quotaError();
+                        data = next;
+                        if(persistent) notify('SLAPY_PREVIEW_STORAGE', { op: 'set', key: key, value: value });
+                    },
+                    removeItem: function(key) {
+                        key = String(key);
+                        if(!Object.prototype.hasOwnProperty.call(data, key)) return;
+                        delete data[key];
+                        if(persistent) notify('SLAPY_PREVIEW_STORAGE', { op: 'remove', key: key });
+                    },
+                    clear: function() {
+                        data = Object.create(null);
+                        if(persistent) notify('SLAPY_PREVIEW_STORAGE', { op: 'clear' });
+                    }
+                };
+                Object.defineProperty(storage, 'length', {
+                    configurable: false,
+                    enumerable: true,
+                    get: function() { return Object.keys(data).length; }
+                });
+                return storage;
+            }
+            function defineVirtual(name, value) {
+                try {
+                    Object.defineProperty(window, name, { configurable: false, enumerable: true, value: value });
+                    return true;
+                } catch(e) {
+                    try {
+                        Object.defineProperty(Window.prototype, name, { configurable: true, get: function() { return value; } });
+                        return true;
+                    } catch(ignore) { return false; }
+                }
+            }
+
+            if(!defineVirtual('localStorage', makeStorage(snapshot, true)) ||
+               !defineVirtual('sessionStorage', makeStorage({}, false))) {
+                notify('SLAPY_PREVIEW_DIAGNOSTIC', { message: 'El navegador no permitió instalar Web Storage virtual.' });
+            }
+            ['indexedDB', 'webkitIndexedDB', 'mozIndexedDB', 'msIndexedDB', 'openDatabase'].forEach(function(name) {
+                try { Object.defineProperty(window, name, { configurable: true, value: undefined }); } catch(e) {}
+            });
+            window.addEventListener('error', function(event) {
+                notify('SLAPY_PREVIEW_DIAGNOSTIC', {
+                    message: String(event.message || 'Error de ejecución').slice(0, 300),
+                    source: String(event.filename || '').slice(0, 200),
+                    line: Number(event.lineno || 0),
+                    column: Number(event.colno || 0)
+                });
+            });
+            window.addEventListener('unhandledrejection', function(event) {
+                var reason = event.reason;
+                notify('SLAPY_PREVIEW_DIAGNOSTIC', {
+                    message: String(reason && reason.message ? reason.message : reason || 'Promesa rechazada').slice(0, 300)
+                });
+            });
+        }
+
+        function injectPreviewStorageBootstrap(html, snapshot, token) {
+            var script = '<scr' + 'ipt>(' + previewStorageRuntime.toString() + ')(' +
+                serializeForInlineScript(snapshot) + ',' +
+                serializeForInlineScript(token) + ',' +
+                serializeForInlineScript(PREVIEW_STORAGE_LIMITS) + ');</scr' + 'ipt>';
+            if(/<head(?:\s[^>]*)?>/i.test(html)) {
+                return html.replace(/<head(?:\s[^>]*)?>/i, function(match) { return match + script; });
+            }
+            if(/<html(?:\s[^>]*)?>/i.test(html)) {
+                return html.replace(/<html(?:\s[^>]*)?>/i, function(match) { return match + '<head>' + script + '</head>'; });
+            }
+            return script + html;
+        }
 
         function getStateStorageKey() {
             var owner = (currentUserCustom || 'guest').toLowerCase();
@@ -1772,6 +2043,8 @@
             var svgPencil = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M12 20h9'></path><path d='M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z'></path></svg>";
             var svgTrash = "<svg class='svg-icon' viewBox='0 0 24 24'><polyline points='3 6 5 6 21 6'></polyline><path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'></path></svg>";
             var svgDownload = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'></path><polyline points='7 10 12 15 17 10'></polyline><line x1='12' y1='15' x2='12' y2='3'></line></svg>";
+            var svgFolderPlus = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M3 6h6l2 3h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z'></path><line x1='12' y1='12' x2='12' y2='18'></line><line x1='9' y1='15' x2='15' y2='15'></line></svg>";
+            var svgFilePlus = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'></path><polyline points='14 2 14 8 20 8'></polyline><line x1='12' y1='12' x2='12' y2='18'></line><line x1='9' y1='15' x2='15' y2='15'></line></svg>";
 
             // RENDERIZAR SUBCARPETAS
             Object.keys(node._folders).sort().forEach(function(fName) {
@@ -1780,13 +2053,14 @@
                 var hiddenClass = isSubOpen ? "" : "hidden";
                 var safeSubPath = escapeAttr(subPath);
 
-                out += "<div style='margin-left: 10px;'>";
+                out += "<div class='subfolder-node'>";
                 out += "  <div class='file-row' style='font-weight:600; color:var(--text-bright);' onclick='toggleSubfolder(\"" + safePName + "\", \"" + safeSubPath + "\", event)'>";
-                out += "    <span style='display:flex; align-items:center; gap:5px;'>" + svgFolder + " " + escapeHtmlText(fName) + "</span>";
+                out += "    <span class='file-name explorer-label'>" + svgFolder + " <span>" + escapeHtmlText(fName) + "</span></span>";
                 out += "    <div class='actions'>";
-                out += "      <button onclick='createSubfolder(\"" + safePName + "\", \"" + safeSubPath + "\", event)' title='Nueva Subcarpeta'>📁</button>";
-                out += "      <button onclick='createFileInFolder(\"" + safePName + "\", \"" + safeSubPath + "\", event)' title='Nuevo archivo en esta carpeta'>+</button>";
-                out += "      <button class='del' onclick='deleteSubfolder(\"" + safePName + "\", \"" + safeSubPath + "\", event)' title='Eliminar carpeta'>🗑</button>";
+                out += "      <button onclick='createSubfolder(\"" + safePName + "\", \"" + safeSubPath + "\", event)' title='Nueva subcarpeta'>" + svgFolderPlus + "</button>";
+                out += "      <button onclick='createFileInFolder(\"" + safePName + "\", \"" + safeSubPath + "\", event)' title='Nuevo archivo'>" + svgFilePlus + "</button>";
+                out += "      <button onclick='renameSubfolder(\"" + safePName + "\", \"" + safeSubPath + "\", event)' title='Renombrar carpeta'>" + svgPencil + "</button>";
+                out += "      <button class='del' onclick='deleteSubfolder(\"" + safePName + "\", \"" + safeSubPath + "\", event)' title='Eliminar carpeta'>" + svgTrash + "</button>";
                 out += "    </div>";
                 out += "  </div>";
                 out += "  <div class='file-list " + hiddenClass + "'>";
@@ -1803,7 +2077,7 @@
                 var isAct = (appState.activePortafolio === pName && appState.activeFile === fName) ? "active" : "";
 
                 out += "<div class='file-row " + isAct + "' onclick='openFile(\"" + safePName + "\", \"" + safeFName + "\")'>";
-                out += "  <span class='file-name' style='display:flex; align-items:center; gap:5px;'>" + svgFile + " " + escapeHtmlText(fileObj.fileName) + "</span>";
+                out += "  <span class='file-name explorer-label'>" + svgFile + " <span>" + escapeHtmlText(fileObj.fileName) + "</span></span>";
                 out += "  <div class='actions'>";
                 out += "    <button onclick='downloadSingleFile(\"" + safePName + "\", \"" + safeFName + "\", event)' title='Descargar'>" + svgDownload + "</button>";
                 out += "    <button onclick='renameFile(\"" + safePName + "\", \"" + safeFName + "\", event)' title='Renombrar'>" + svgPencil + "</button>";
@@ -1835,6 +2109,8 @@
                 var svgStar = "<svg class='svg-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'></polygon></svg>";
                 var svgStarFilled = "<svg class='svg-icon' viewBox='0 0 24 24' fill='#e2b93b' stroke='#e2b93b' stroke-width='2'><polygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'></polygon></svg>";
                 var svgCloudSection = "<svg class='svg-icon' viewBox='0 0 24 24' style='width:12px; height:12px;'><path d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'></path></svg>";
+                var svgFolderPlus = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M3 6h6l2 3h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z'></path><line x1='12' y1='12' x2='12' y2='18'></line><line x1='9' y1='15' x2='15' y2='15'></line></svg>";
+                var svgFilePlus = "<svg class='svg-icon' viewBox='0 0 24 24'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'></path><polyline points='14 2 14 8 20 8'></polyline><line x1='12' y1='12' x2='12' y2='18'></line><line x1='9' y1='15' x2='15' y2='15'></line></svg>";
 
                 var favorites = [];
                 var locals = [];
@@ -1869,13 +2145,15 @@
                         
                         out += "<div>";
                         out += "  <div class='folder-row " + isActiveFolder + "' onclick='toggleFolder(\"" + safePName + "\")'>";
-                        out += "    <span class='folder-name' style='gap:4px;'>" + folderIcon + " <span style='margin-left:4px;'>" + escapeHtmlText(pName) + "</span></span>";
+                        out += "    <span class='folder-name explorer-label'>" + folderIcon + " <span>" + escapeHtmlText(pName) + "</span></span>";
                         out += "    <div class='actions'>";
                         out += starBtn;
-                        out += "      <button onclick='createSubfolder(\"" + safePName + "\", \"\", event)' title='Nueva Carpeta Raíz'>📁</button>";
-                        out += "      <button onclick='createFileInFolder(\"" + safePName + "\", \"\", event)' title='Nuevo Archivo'>+</button>";
-                        out += "      <button onclick='pushProject(\"" + safePName + "\", event)' title='Push a la Nube' style='color:#28a745;'>" + svgPush + "</button>";
-                        out += "      <button onclick='getProject(\"" + safePName + "\", event)' title='Get desde la Nube' style='color:#007acc;'>" + svgGet + "</button>";
+                        out += "      <button onclick='createSubfolder(\"" + safePName + "\", \"\", event)' title='Nueva carpeta raíz'>" + svgFolderPlus + "</button>";
+                        out += "      <button onclick='createFileInFolder(\"" + safePName + "\", \"\", event)' title='Nuevo archivo'>" + svgFilePlus + "</button>";
+                        if(canUseCloud()) {
+                            out += "      <button class='cloud-project-action' onclick='pushProject(\"" + safePName + "\", event)' title='Push a la Nube'>" + svgPush + "</button>";
+                            out += "      <button class='cloud-project-action' onclick='getProject(\"" + safePName + "\", event)' title='Get desde la Nube'>" + svgGet + "</button>";
+                        }
                         out += "      <button onclick='downloadPortafolio(\"" + safePName + "\", event)' title='Descargar .zip'>" + svgDownload + "</button>";
                         out += "      <button onclick='renamePortafolio(\"" + safePName + "\", event)' title='Renombrar'>" + svgPencil + "</button>";
                         out += "      <button class='del' onclick='deletePortafolio(\"" + safePName + "\", event)' title='Eliminar'>" + svgTrash + "</button>";
@@ -1973,6 +2251,87 @@
                 pData.isGhost = false;
                 openFile(pName, fName);
             }
+        }
+
+        function renameSubfolder(pName, subPath, e) {
+            if(e) e.stopPropagation();
+            var pData = appState.portafolios[pName];
+            if(!pData || !pData.files || !subPath) return;
+
+            var parts = subPath.split('/');
+            var oldFolderName = parts.pop();
+            var parentPrefix = parts.join('/');
+            var newFolderName = prompt("Renombrar carpeta:", oldFolderName);
+            if(!newFolderName || newFolderName.trim() === "") return;
+            newFolderName = newFolderName.trim().replace(/\/+/g, '');
+            if(!newFolderName || newFolderName === oldFolderName) return;
+
+            var newPrefix = parentPrefix ? (parentPrefix + "/" + newFolderName) : newFolderName;
+            var oldPrefix = subPath + "/";
+            var newPrefixWithSlash = newPrefix + "/";
+            var collision = Object.keys(pData.files).some(function(path) {
+                return path === newPrefix || path.startsWith(newPrefixWithSlash);
+            });
+            if(collision) { showToast("⚠️ Ya existe una carpeta o elemento con ese nombre."); return; }
+
+            function remapPath(path) {
+                if(path === subPath) return newPrefix;
+                if(path && path.startsWith(oldPrefix)) return newPrefixWithSlash + path.slice(oldPrefix.length);
+                return path;
+            }
+
+            var pathMap = {};
+            Object.keys(pData.files).forEach(function(path) {
+                var mapped = remapPath(path);
+                if(mapped !== path) pathMap[path] = mapped;
+            });
+            if(Object.keys(pathMap).length === 0) return;
+
+            Object.keys(pathMap).forEach(function(oldPath) { pData.files[pathMap[oldPath]] = pData.files[oldPath]; });
+            Object.keys(pathMap).forEach(function(oldPath) { delete pData.files[oldPath]; });
+
+            function remapKeyedObject(obj) {
+                if(!obj || typeof obj !== 'object') return;
+                var changes = [];
+                Object.keys(obj).forEach(function(key) {
+                    var mapped = remapPath(key);
+                    if(mapped !== key) changes.push([key, mapped, obj[key]]);
+                });
+                changes.forEach(function(item) { obj[item[1]] = item[2]; });
+                changes.forEach(function(item) { delete obj[item[0]]; });
+            }
+            remapKeyedObject(pData.localHistory);
+            remapKeyedObject(pData.splitMeta);
+
+            if(pData.splitMap && typeof pData.splitMap === 'object') {
+                var newSplitMap = {};
+                Object.keys(pData.splitMap).forEach(function(parent) {
+                    var children = pData.splitMap[parent];
+                    newSplitMap[remapPath(parent)] = Array.isArray(children) ? children.map(remapPath) : children;
+                });
+                pData.splitMap = newSplitMap;
+            }
+            if(Array.isArray(pData.openTabs)) pData.openTabs = pData.openTabs.map(remapPath);
+            if(appState.activePortafolio === pName && appState.activeFile) appState.activeFile = remapPath(appState.activeFile);
+
+            if(pData.openSubfolders && typeof pData.openSubfolders === 'object') {
+                var newOpenSubfolders = {};
+                Object.keys(pData.openSubfolders).forEach(function(folder) { newOpenSubfolders[remapPath(folder)] = pData.openSubfolders[folder]; });
+                pData.openSubfolders = newOpenSubfolders;
+                pData.openSubfolders[newPrefix] = true;
+            }
+
+            Object.keys(pData.files).forEach(function(filePath) {
+                if(typeof pData.files[filePath] !== 'string') return;
+                Object.keys(pathMap).forEach(function(oldPath) {
+                    var markerRegex = new RegExp("<!--\\s*\\[SLAPY-SPLIT:\\s*" + escapeRegExp(oldPath) + "\\s*\\]\\s*-->", "g");
+                    pData.files[filePath] = pData.files[filePath].replace(markerRegex, "<!-- [SLAPY-SPLIT:" + pathMap[oldPath] + "] -->");
+                });
+            });
+
+            saveLocalState(); renderExplorer(); renderTabs();
+            if(appState.activePortafolio === pName && appState.activeFile && pData.files[appState.activeFile] !== undefined && editor) editor.setValue(pData.files[appState.activeFile]);
+            showToast("✏️ Carpeta renombrada a: " + newPrefix);
         }
 
         function deleteSubfolder(pName, subPath, e) {
@@ -2507,7 +2866,7 @@
         // =========================================================
         // MOTOR DE EJECUCIÓN OPTIMIZADO PARA SAFARI & CHROME
         // =========================================================
-        function runCode() {
+        async function runCode() {
             var pName = appState.activePortafolio;
             if(!pName || !appState.portafolios[pName]) {
                 var keys = Object.keys(appState.portafolios || {});
@@ -2589,9 +2948,19 @@
                 if(/<\/body>/i.test(combined)) combined = combined.replace(/<\/body>/i, function() { return jsCode + '</body>'; });
                 else combined = combined + '\n' + jsCode;
             }
+
+            var runSequence = ++previewRunSequence;
+            await flushActivePreviewStorage();
+            var storageKey = getPreviewStorageKey(pName);
+            var previewSnapshot = await loadPreviewSnapshot(storageKey);
+            if(runSequence !== previewRunSequence) return;
+            var previewToken = createPreviewToken();
+            combined = injectPreviewStorageBootstrap(combined, previewSnapshot, previewToken);
+            ensurePreviewStorageListener();
             
             var wrapper = document.getElementById('iframe-wrapper');
             if(wrapper) {
+                activePreviewBridge = null;
                 var oldIframe = wrapper.querySelector('iframe');
                 if(oldIframe) {
                     try { oldIframe.src = 'about:blank'; } catch(e) {}
@@ -2604,8 +2973,16 @@
                 iframe.style.border = 'none';
                 // El código del proyecto puede ejecutar scripts, pero queda en un origen opaco sin acceso al DOM/Storage de Slapy.
                 iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-downloads');
-                iframe.srcdoc = combined;
                 wrapper.appendChild(iframe);
+                activePreviewBridge = {
+                    iframe: iframe,
+                    token: previewToken,
+                    storageKey: storageKey,
+                    snapshot: previewSnapshot,
+                    dirty: false,
+                    persistTimer: null
+                };
+                iframe.srcdoc = combined;
             }
             saveLocalState();
             showToast("✔ Código Ejecutado");
@@ -2667,6 +3044,15 @@
                 sb.classList.remove('visible');
             }
         });
+
+        document.addEventListener('touchstart', function(e) {
+            if(isSidebarPinned || !e.touches || !e.touches.length) return;
+            var sb = document.getElementById('sidebar');
+            if(!sb) return;
+            var x = e.touches[0].clientX;
+            if(x <= 24 && !sb.classList.contains('visible')) sb.classList.add('visible');
+            else if(x > 285 && sb.classList.contains('visible')) sb.classList.remove('visible');
+        }, { passive: true });
 
         document.addEventListener('keydown', function(e) {
             var activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
@@ -2795,6 +3181,9 @@
             var loggedOutUI = document.getElementById('auth-ui-logged-out');
             var loggedInUI = document.getElementById('auth-ui-logged-in');
             var verifiedUser = getVerifiedFirebaseUser();
+            var cloudAvailable = canUseCloud();
+            var cloudOnlyControls = document.querySelectorAll('.cloud-only-control');
+            for(var cloudIndex = 0; cloudIndex < cloudOnlyControls.length; cloudIndex++) cloudOnlyControls[cloudIndex].style.display = cloudAvailable ? 'flex' : 'none';
             
             if (currentUserCustom !== "") {
                 var nDisplay = currentDisplayName || currentUserCustom || "U";
@@ -2827,6 +3216,7 @@
             if(adminTab) {
                 adminTab.style.display = (verifiedUser && verifiedUser.email.toLowerCase() === "gab.rmz@icloud.com") ? 'block' : 'none';
             }
+            renderExplorer();
         }
 
         loadLocalState().then(function() {
