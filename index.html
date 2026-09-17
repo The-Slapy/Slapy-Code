@@ -1,18 +1,18 @@
 <!--
-[SLAPY-VERSION: 1.1.1.0]
-[SLAPY-TITLE: Preview aislado con almacenamiento virtual]
-[SLAPY-DESC: Corrige la ejecución de aplicaciones que usan Web Storage dentro del preview mediante almacenamiento virtual aislado, preservando el sandbox y las mejoras del explorador publicadas en 1.1.0.2.]
+[SLAPY-VERSION: 1.3.0.0]
+[SLAPY-TITLE: Identidad visual Propuesta 4 / DREV-004]
+[SLAPY-DESC: Rediseño visual DREV-004 dark-first con identidad aprobada Propuesta 4; preserva comportamiento, datos, integraciones y funcionalidad de 1.1.1.1.]
 -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Slapy</title>
     
     <!-- Configuración PWA Slapy -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#252526">
+    <meta name="theme-color" content="#0B1220">
     <script>
         (function() {
             var initialTheme = 'dark';
@@ -23,7 +23,7 @@
             window.__slapyInitialTheme = initialTheme;
             document.documentElement.classList.toggle('light-mode', initialTheme === 'light');
             var themeMeta = document.querySelector('meta[name="theme-color"]');
-            if(themeMeta) themeMeta.setAttribute('content', initialTheme === 'light' ? '#ffffff' : '#252526');
+            if(themeMeta) themeMeta.setAttribute('content', initialTheme === 'light' ? '#ffffff' : '#0B1220');
         })();
     </script>
 
@@ -1079,6 +1079,315 @@
         @media (pointer: coarse) { .actions { display:flex; } .actions button { width:25px; height:25px; min-width:25px; } }
         @media (prefers-reduced-motion: reduce) { .sidebar, .sidebar.unpinned, .sidebar.unpinned.visible { transition:none !important; } }
 
+
+
+        /* =========================================================
+           SLAPY 1.3.0.0 — DREV-005 iPHONE / MOBILE UX
+           Responsive presentation evolution over DREV-004. Product behavior preserved.
+           ========================================================= */
+        :root {
+            --slapy-bg: #0B1220;
+            --slapy-surface: #111827;
+            --slapy-surface-2: #1E293B;
+            --slapy-primary: #2563FF;
+            --slapy-primary-bright: #38B2F6;
+            --slapy-accent: #22D3EE;
+            --slapy-text: #F8FAFC;
+            --slapy-text-muted: #9CA3AF;
+            --slapy-border: #334155;
+            --slapy-success: #22C55E;
+            --slapy-danger: #EF4444;
+            --slapy-radius-sm: 4px;
+            --slapy-radius-md: 8px;
+            --slapy-radius-lg: 12px;
+            --slapy-space-1: 4px;
+            --slapy-space-2: 8px;
+            --slapy-space-3: 12px;
+            --slapy-space-4: 16px;
+            --slapy-space-6: 24px;
+            --slapy-space-8: 32px;
+            --slapy-font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+            /* Compatibility aliases into the existing semantic system. */
+            --bg-dark: var(--slapy-bg);
+            --bg-panel: var(--slapy-surface);
+            --bg-editor: #0D1524;
+            --border: var(--slapy-border);
+            --accent: var(--slapy-primary);
+            --text-main: #D7DEE9;
+            --text-muted: var(--slapy-text-muted);
+            --text-bright: var(--slapy-text);
+            --bg-hover: #182338;
+            --bg-active: var(--slapy-surface-2);
+            --bg-tab: #0F172A;
+            --surface-raised: var(--slapy-surface-2);
+            --surface-soft: #0F172A;
+            --surface-glass: var(--slapy-surface);
+            --border-soft: rgba(51, 65, 85, .82);
+            --accent-soft: rgba(37, 99, 255, .16);
+            --accent-strong: var(--slapy-primary-bright);
+            --success: var(--slapy-success);
+            --danger: var(--slapy-danger);
+            --focus-ring: rgba(34, 211, 238, .30);
+            --radius-xs: var(--slapy-radius-sm);
+            --radius-sm: var(--slapy-radius-sm);
+            --radius-md: var(--slapy-radius-md);
+            --radius-lg: var(--slapy-radius-lg);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,.20);
+            --shadow-md: 0 10px 28px rgba(0,0,0,.28);
+            --shadow-lg: 0 20px 50px rgba(0,0,0,.34);
+            --control-h: 32px;
+        }
+
+        html.light-mode {
+            --bg-dark: #F1F5F9;
+            --bg-panel: #FFFFFF;
+            --bg-editor: #F8FAFC;
+            --border: #CBD5E1;
+            --accent: #2563FF;
+            --text-main: #334155;
+            --text-muted: #64748B;
+            --text-bright: #0F172A;
+            --bg-hover: #E8EEF7;
+            --bg-active: #DBE7F6;
+            --bg-tab: #EEF2F7;
+            --surface-raised: #FFFFFF;
+            --surface-soft: #F8FAFC;
+            --surface-glass: #FFFFFF;
+            --border-soft: rgba(148, 163, 184, .60);
+            --accent-soft: rgba(37, 99, 255, .10);
+            --accent-strong: #1557E8;
+            --success: #16A34A;
+            --danger: #DC2626;
+            --focus-ring: rgba(37, 99, 255, .24);
+            --shadow-sm: 0 2px 8px rgba(15,23,42,.07);
+            --shadow-md: 0 10px 28px rgba(15,23,42,.10);
+            --shadow-lg: 0 20px 50px rgba(15,23,42,.14);
+        }
+
+        body { font-family: var(--slapy-font-sans); background: var(--bg-dark); }
+        header { height: 48px; padding: 0 var(--slapy-space-3); background: var(--bg-panel); border-bottom: 1px solid var(--border); box-shadow: none; }
+        .workspace { height: calc(100vh - 48px); }
+        .header-left, .header-right { gap: var(--slapy-space-2); }
+        .logo { gap: var(--slapy-space-2); margin-right: var(--slapy-space-1); min-width: 0; }
+        .brand-lockup { display: inline-flex; align-items: center; width: 104px; height: 31px; overflow: hidden; flex: 0 0 auto; }
+        .slapy-brand-logo { display: block; width: 104px; height: auto; }
+        .brand-version { color: var(--text-muted); font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin-left: 0; }
+        html.light-mode .slapy-brand-logo text:first-of-type { fill: #0F172A !important; }
+        html.light-mode .slapy-brand-logo text:last-of-type { fill: #64748B !important; }
+        .logo button { width: 30px; height: 30px; padding: 6px; border: 1px solid transparent; border-radius: var(--slapy-radius-md); }
+        .logo button:hover { background: var(--bg-hover); border-color: var(--border); }
+
+        .view-controls { min-height: 32px; padding: 2px; gap: 2px; background: #0D1524; border: 1px solid var(--border); border-radius: var(--slapy-radius-md); box-shadow: none; }
+        html.light-mode .view-controls { background: #F8FAFC; }
+        .view-controls button { min-height: 26px; padding: 4px 9px; border-radius: 6px; }
+        .view-controls button.active { background: var(--bg-active); box-shadow: none; color: var(--text-bright); }
+        .btn, .login-btn, .global-info button, .actions button, .side-header button, .user-actions button, .close-modal, .search-row button, .tab-close { border-radius: var(--slapy-radius-md); }
+        .btn { min-height: 32px; padding: 5px 11px; }
+        .btn:focus-visible, .view-controls button:focus-visible, .logo button:focus-visible, .side-header button:focus-visible, .actions button:focus-visible, .user-actions button:focus-visible, .login-btn:focus-visible, .global-info button:focus-visible, .tab:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--slapy-accent); outline-offset: 2px; box-shadow: none; }
+        .header-right .btn[onclick="runCode()"], .replace-btn, .btn-primary, .btn-auth-modern, .login-btn { background: var(--slapy-primary) !important; border-color: var(--slapy-primary) !important; box-shadow: none; }
+        .header-right .btn[onclick="runCode()"]:hover, .replace-btn:hover, .btn-primary:hover, .btn-auth-modern:hover, .login-btn:hover { background: #1D56E8 !important; filter: none; box-shadow: none; }
+
+        .sidebar { width: 272px; background: var(--bg-panel); border-right: 1px solid var(--border); box-shadow: none; }
+        .sidebar.unpinned.visible { box-shadow: 12px 0 28px rgba(0,0,0,.28); }
+        .side-header { min-height: 42px; padding: 9px 10px 9px 12px; border-bottom-color: var(--border); font-size: 10px; letter-spacing: .12em; }
+        .side-header button { width: 28px; height: 28px; }
+        .tree { padding: 8px 7px 10px; }
+        .folder-row, .file-row { min-height: 30px; margin: 1px 0; border-radius: var(--slapy-radius-md); }
+        .folder-row.active-folder, .file-row.active { background: rgba(37,99,255,.14); box-shadow: inset 3px 0 0 var(--slapy-primary); }
+        .split-child { border-radius: 0 var(--slapy-radius-md) var(--slapy-radius-md) 0; }
+        .split-child:hover, .split-child.active { color: var(--slapy-accent); border-left-color: var(--slapy-accent); }
+        .sidebar-footer { padding: var(--slapy-space-3); background: #0D1524; border-top-color: var(--border); }
+        html.light-mode .sidebar-footer { background: #F8FAFC; }
+        .global-info button { min-height: 34px; background: transparent; border-color: var(--border); box-shadow: none; }
+        .user-avatar { background: var(--slapy-primary); }
+
+        .main-area, .panels-container, .editor-section { background: var(--bg-editor); }
+        .tabs-bar { height: 38px; padding: 4px 6px 0; gap: 3px; background: var(--bg-dark); border-bottom-color: var(--border); }
+        .tab { min-width: 118px; padding: 0 11px; border: 1px solid transparent; border-bottom: 0; border-radius: var(--slapy-radius-md) var(--slapy-radius-md) 0 0; background: var(--bg-tab); box-shadow: none; }
+        .tab.active { background: var(--bg-editor); border-color: var(--border); border-bottom-color: var(--bg-editor); box-shadow: inset 0 2px 0 var(--slapy-primary); }
+        .tab.tab-child-text span { color: var(--slapy-accent); }
+        .tab-close:hover { color: var(--slapy-danger); background: rgba(239,68,68,.12); }
+        .CodeMirror { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important; }
+        .CodeMirror-gutters { background: var(--bg-editor) !important; border-right-color: var(--border) !important; }
+        .preview-section { border-left: 1px solid var(--border); }
+
+        .editor-search-panel, .modal-box, .commit-card, .toast { border-color: var(--border); box-shadow: var(--shadow-md); }
+        .editor-search-panel { background: var(--bg-panel); border-radius: var(--slapy-radius-lg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+        .search-row input, .input-dark { min-height: 34px; border-radius: var(--slapy-radius-md); background: #0D1524; border-color: var(--border); }
+        html.light-mode .search-row input, html.light-mode .input-dark { background: #F8FAFC; }
+        .modal-overlay { background: rgba(2,6,23,.74); backdrop-filter: none; -webkit-backdrop-filter: none; }
+        .modal-box { background: var(--bg-panel); border-radius: var(--slapy-radius-lg); }
+        .commit-card { background: #0D1524; border-radius: var(--slapy-radius-lg); }
+        html.light-mode .commit-card { background: #F8FAFC; }
+        .info-tab { border-radius: var(--slapy-radius-md); background: #0D1524; border-color: var(--border); }
+        html.light-mode .info-tab { background: #F8FAFC; }
+        .info-tab.active { background: rgba(37,99,255,.16); border-color: var(--slapy-primary); color: var(--slapy-primary-bright); }
+        .toast { background: var(--bg-panel); border-left: 3px solid var(--slapy-accent); border-radius: var(--slapy-radius-lg); }
+        #drop-zone { border-radius: var(--slapy-radius-lg); }
+
+        button:disabled, .btn:disabled, .view-controls button:disabled { opacity: .46; cursor: not-allowed; filter: grayscale(.1); }
+        .status-success, .success { color: var(--slapy-success); }
+        .status-error, .error { color: var(--slapy-danger); }
+
+        @media (max-width: 1024px) {
+            header { padding: 0 8px; }
+            .brand-lockup { width: 88px; }
+            .slapy-brand-logo { width: 88px; }
+            .sidebar { width: 258px; }
+            .btn { padding-left: 9px; padding-right: 9px; }
+            .header-left { gap: 5px; }
+        }
+        @media (max-width: 820px) {
+            .brand-version { display: none; }
+            .header-left > div[style*="width: 1px"] { margin-left: 1px !important; margin-right: 1px !important; }
+            .header-center { left: auto; right: 57px; transform: none; }
+            .header-left .view-controls button { padding-left: 7px; padding-right: 7px; }
+            .btn { min-width: 36px; }
+        }
+
+
+        /* =========================================================
+           SLAPY 1.3.0.0 — DREV-005 MOBILE PRESENTATION LAYER
+           Mobile != shrunk desktop. Presentation-only responsive state.
+           ========================================================= */
+        :root {
+            --slapy-safe-top: env(safe-area-inset-top, 0px);
+            --slapy-safe-right: env(safe-area-inset-right, 0px);
+            --slapy-safe-bottom: env(safe-area-inset-bottom, 0px);
+            --slapy-safe-left: env(safe-area-inset-left, 0px);
+            --slapy-visible-vh: 100dvh;
+            --slapy-mobile-nav-h: 58px;
+        }
+        .mobile-only { display: none !important; }
+        .mobile-explorer-backdrop { display: none; }
+        .mobile-overflow-menu { display: none; }
+
+        @media (max-width: 600px), (max-width: 932px) and (max-height: 500px) and (pointer: coarse) {
+            html, body { width: 100%; max-width: 100%; overflow: hidden; overscroll-behavior: none; }
+            body { min-height: 100vh; min-height: var(--slapy-visible-vh, 100dvh); }
+            .mobile-only { display: flex !important; }
+
+            header {
+                height: auto;
+                min-height: calc(52px + var(--slapy-safe-top));
+                padding: var(--slapy-safe-top) max(8px, var(--slapy-safe-right)) 0 max(8px, var(--slapy-safe-left));
+                gap: 6px;
+                z-index: 120;
+            }
+            .header-left { flex: 0 1 auto; min-width: 44px; gap: 4px; }
+            .header-left .brand-lockup { width: 34px; overflow: hidden; }
+            .header-left .slapy-brand-logo { width: 104px; max-width: none; transform: translateX(-1px); }
+            .brand-version, .header-left > div[style*="width: 1px"], .header-left > .view-controls,
+            #btn-search-main, #btn-split-toggle, .header-left > .btn:not(#mobile-overflow-toggle) { display: none !important; }
+            .header-center { position: static; transform: none; flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; }
+            .header-center > .view-controls { display: none !important; }
+            .header-right { flex: 0 0 auto; gap: 4px; }
+            .header-right .btn[onclick="runCode()"] { min-width: 44px; min-height: 44px; padding: 6px 9px; font-size: 0; }
+            .header-right .btn[onclick="runCode()"] .svg-icon { width: 19px; height: 19px; margin: 0; }
+            #btn-pin-sidebar, #mobile-overflow-toggle { min-width: 44px; min-height: 44px; }
+
+            #mobile-file-context {
+                align-items: center; justify-content: center; gap: 5px; min-width: 0; max-width: 100%;
+                color: var(--text-bright); font-size: 12px; font-weight: 600;
+            }
+            #mobile-active-file-name { display: block; max-width: min(44vw, 220px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            #mobile-close-active-file { width: 34px; height: 34px; border: 0; border-radius: var(--slapy-radius-md); background: transparent; color: var(--text-muted); }
+            #mobile-close-active-file:active { background: var(--bg-hover); color: var(--slapy-danger); }
+
+            .workspace {
+                height: calc(100vh - 52px - var(--slapy-safe-top));
+                height: calc(var(--slapy-visible-vh, 100dvh) - 52px - var(--slapy-safe-top));
+                width: 100%; min-width: 0; overflow: hidden; position: relative;
+            }
+            .main-area, .panels-container, .editor-section, .preview-section { min-width: 0; }
+            .main-area { width: 100%; height: 100%; padding-bottom: calc(var(--slapy-mobile-nav-h) + var(--slapy-safe-bottom)); }
+            .tabs-bar { display: none !important; }
+            .panels-container { height: 100%; width: 100%; overflow: hidden; }
+
+            .sidebar {
+                position: fixed !important;
+                z-index: 160;
+                top: 0 !important; left: 0 !important;
+                width: min(88vw, 360px) !important;
+                height: 100vh !important; height: var(--slapy-visible-vh, 100dvh) !important;
+                padding-top: var(--slapy-safe-top);
+                padding-left: var(--slapy-safe-left);
+                transform: translate3d(-104%,0,0) !important;
+                opacity: 1 !important;
+                box-shadow: none !important;
+                border-right: 1px solid var(--border) !important;
+                transition: transform .2s ease, box-shadow .2s ease !important;
+            }
+            .sidebar.visible { transform: translate3d(0,0,0) !important; box-shadow: 12px 0 34px rgba(0,0,0,.42) !important; }
+            .side-header { min-height: 52px; flex: 0 0 auto; }
+            .side-header button, .folder-row, .file-row, .split-child, .user-actions button, .global-info button, .login-btn { min-height: 44px; }
+            .tree { min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
+            .sidebar-footer { flex: 0 0 auto; max-height: 42vh; overflow: auto; padding-bottom: max(12px, var(--slapy-safe-bottom)); }
+            .mobile-explorer-backdrop {
+                position: fixed; inset: 0; z-index: 150; background: rgba(2,6,23,.62); border: 0; padding: 0;
+            }
+            body.mobile-explorer-open .mobile-explorer-backdrop { display: block; }
+
+            body[data-mobile-surface="code"] #editor-section { display: flex !important; flex: 1 1 100% !important; width: 100% !important; }
+            body[data-mobile-surface="code"] #preview-section { display: none !important; }
+            body[data-mobile-surface="preview"] #editor-section { display: none !important; }
+            body[data-mobile-surface="preview"] #preview-section { display: flex !important; flex: 1 1 100% !important; width: 100% !important; border-left: 0; }
+            .editor-section, .preview-section { height: 100% !important; max-width: 100% !important; overflow: hidden; }
+            .CodeMirror { font-size: 13px; height: 100% !important; }
+            .CodeMirror-gutters { padding-right: 1px; }
+            .CodeMirror-linenumber { padding: 0 4px 0 2px; }
+
+            .editor-search-panel {
+                position: fixed !important; z-index: 180; left: max(8px, var(--slapy-safe-left)) !important;
+                right: max(8px, var(--slapy-safe-right)) !important; top: auto !important;
+                bottom: calc(var(--slapy-mobile-nav-h) + var(--slapy-safe-bottom) + 8px) !important;
+                width: auto !important; max-width: none !important; max-height: min(52vh, 380px); overflow: auto;
+                border-radius: var(--slapy-radius-lg); padding: 10px;
+            }
+            .search-row { flex-wrap: wrap; }
+            .search-row input { min-width: 110px; min-height: 44px; }
+            .search-row button { min-width: 44px; min-height: 44px; }
+
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal-box {
+                width: 100% !important; max-width: 100% !important; max-height: calc(var(--slapy-visible-vh, 100dvh) - var(--slapy-safe-top));
+                margin: 0; border-radius: 14px 14px 0 0; padding-left: max(16px, var(--slapy-safe-left));
+                padding-right: max(16px, var(--slapy-safe-right)); padding-bottom: max(16px, var(--slapy-safe-bottom)); overflow: auto;
+            }
+            .close-modal, .close-btn-modern { min-width: 44px; min-height: 44px; }
+
+            #mobile-surface-switcher {
+                position: fixed; z-index: 130; left: max(8px, var(--slapy-safe-left)); right: max(8px, var(--slapy-safe-right));
+                bottom: max(6px, var(--slapy-safe-bottom)); height: 48px; display: grid !important; grid-template-columns: 1fr 1fr;
+                gap: 4px; padding: 4px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-md);
+            }
+            #mobile-surface-switcher button { min-height: 40px; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); font: 600 12px/1 var(--slapy-font-sans); }
+            #mobile-surface-switcher button[aria-selected="true"] { background: var(--slapy-primary); color: #fff; }
+
+            #mobile-overflow-menu {
+                position: fixed; z-index: 190; top: calc(52px + var(--slapy-safe-top)); right: max(8px, var(--slapy-safe-right));
+                width: min(280px, calc(100vw - 16px - var(--slapy-safe-left) - var(--slapy-safe-right)));
+                max-height: calc(var(--slapy-visible-vh, 100dvh) - 70px - var(--slapy-safe-top) - var(--slapy-safe-bottom));
+                overflow: auto; padding: 8px; flex-direction: column; gap: 4px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg);
+            }
+            body.mobile-overflow-open #mobile-overflow-menu { display: flex !important; }
+            #mobile-overflow-menu button { width: 100%; min-height: 44px; justify-content: flex-start; text-align: left; background: transparent; color: var(--text-main); border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; }
+            #mobile-overflow-menu button:active { background: var(--bg-hover); border-color: var(--border); }
+
+            body.fullscreen #mobile-surface-switcher { display: none !important; }
+            body.fullscreen .main-area { padding-bottom: 0; }
+        }
+
+        @media (max-width: 600px) and (orientation: landscape) {
+            .header-left .brand-lockup { display: none; }
+            #mobile-active-file-name { max-width: 46vw; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .sidebar, #mobile-overflow-menu, #mobile-surface-switcher { transition: none !important; }
+        }
+
     </style>
 </head>
 <body>
@@ -1091,10 +1400,16 @@
         <!-- LADO IZQUIERDO -->
         <div class="header-left">
             <div class="logo">
-                <button onclick="toggleSidebarPin()" id="btn-pin-sidebar" title="Desfijar Menú (Shift+M)">
+                <button onclick="toggleSidebarPin()" id="btn-pin-sidebar" title="Desfijar Menú (Shift+M)" aria-label="Mostrar u ocultar explorador" aria-expanded="false">
                     <svg class="svg-icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
-                Slapy <span id="slapy-version-display" style="font-size: 10px; color: var(--text-muted); margin-left: 5px; font-weight: normal; font-family: monospace;"></span>
+                <span class="brand-lockup" aria-label="Slapy — El editor web"><svg class="slapy-brand-logo" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+<title id="title">Slapy — El editor web</title><desc id="desc">Approved Proposal 4 horizontal Slapy lockup.</desc>
+<defs><linearGradient id="gLeft" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38B2F6"/><stop offset="1" stop-color="#1557FF"/></linearGradient><linearGradient id="gTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2563FF"/><stop offset="1" stop-color="#0B4FEA"/></linearGradient><linearGradient id="gBottom" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8CC9FF"/><stop offset="1" stop-color="#5CA7F2"/></linearGradient></defs>
+<g transform="translate(40 40) scale(.55)"><rect x="72" y="72" width="112" height="368" rx="48" fill="url(#gLeft)"/><path d="M224 112 Q224 88 248 94 L408 142 Q428 148 428 170 L428 230 Q428 252 408 258 L248 270 Q224 272 224 248 Z" fill="url(#gTop)"/><path d="M224 304 Q224 282 246 280 L408 286 Q428 288 428 310 L428 372 Q428 394 408 400 L248 438 Q224 444 224 418 Z" fill="url(#gBottom)"/></g>
+<text x="350" y="180" font-family="Inter, Arial, sans-serif" font-size="138" font-weight="700" fill="#FFFFFF">Slapy</text><text x="358" y="250" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500" letter-spacing="14" fill="#9CA3AF">EL EDITOR WEB</text>
+</svg></span>
+                <span id="slapy-version-display" class="brand-version"></span>
             </div>
             
             <div style="width: 1px; height: 15px; background-color: var(--border); margin: 0 5px;"></div>
@@ -1115,6 +1430,10 @@
 
         <!-- CENTRO -->
         <div class="header-center">
+            <div id="mobile-file-context" class="mobile-only" aria-live="polite">
+                <span id="mobile-active-file-name">Sin archivo</span>
+                <button id="mobile-close-active-file" type="button" title="Cerrar archivo activo" aria-label="Cerrar archivo activo" onclick="closeMobileActiveFile()">×</button>
+            </div>
             <div class="view-controls">
                 <button id="btn-view-code" onclick="setLayout('code')" title="Solo Código (Alt + 1)">
                     <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
@@ -1133,10 +1452,12 @@
             <button class="btn" style="background:var(--accent); color:white; border-color:var(--accent);" onclick="runCode()" title="Ejecutar Código (Ctrl+S)">
                 <svg class="svg-icon" viewBox="0 0 24 24" style="fill: currentColor; stroke: none;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Ejecutar
             </button>
+            <button id="mobile-overflow-toggle" class="btn mobile-only" type="button" aria-label="Más herramientas" aria-expanded="false" onclick="toggleMobileOverflow()">•••</button>
         </div>
     </header>
 
     <div class="workspace" id="workspace-area">
+        <button id="mobile-explorer-backdrop" class="mobile-explorer-backdrop" type="button" aria-label="Cerrar explorador" onclick="closeMobileExplorer()"></button>
         
         <div id="drop-zone">
             <svg class="svg-icon" style="width:40px; height:40px; margin-bottom:10px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -1237,6 +1558,18 @@
                     <div id="iframe-wrapper"></div>
                 </div>
             </div>
+        </div>
+        <nav id="mobile-surface-switcher" class="mobile-only" aria-label="Superficie de trabajo">
+            <button id="mobile-surface-code" type="button" role="tab" aria-selected="true" onclick="setMobileSurface('code')">Código</button>
+            <button id="mobile-surface-preview" type="button" role="tab" aria-selected="false" onclick="setMobileSurface('preview')">Preview</button>
+        </nav>
+        <div id="mobile-overflow-menu" class="mobile-overflow-menu" role="menu" aria-label="Herramientas móviles">
+            <button type="button" role="menuitem" onclick="toggleSearch(); closeMobileOverflow()">Buscar / Reemplazar</button>
+            <button type="button" role="menuitem" onclick="toggleSplitMode(); closeMobileOverflow()">Split / Un-Split</button>
+            <button type="button" role="menuitem" onclick="openLocalHistoryModal(); closeMobileOverflow()">Historial local</button>
+            <button type="button" role="menuitem" onclick="toggleTheme(); closeMobileOverflow()">Tema claro / oscuro</button>
+            <button type="button" role="menuitem" onclick="changeFontSize(-1); closeMobileOverflow()">Reducir texto</button>
+            <button type="button" role="menuitem" onclick="changeFontSize(1); closeMobileOverflow()">Aumentar texto</button>
         </div>
     </div>
 
@@ -2261,23 +2594,33 @@
             var parts = subPath.split('/');
             var oldFolderName = parts.pop();
             var parentPrefix = parts.join('/');
-            var newFolderName = prompt("Renombrar carpeta:", oldFolderName);
-            if(!newFolderName || newFolderName.trim() === "") return;
+            var newFolderName = prompt('Renombrar carpeta:', oldFolderName);
+            if(!newFolderName || newFolderName.trim() === '') return;
             newFolderName = newFolderName.trim().replace(/\/+/g, '');
             if(!newFolderName || newFolderName === oldFolderName) return;
 
-            var newPrefix = parentPrefix ? (parentPrefix + "/" + newFolderName) : newFolderName;
-            var oldPrefix = subPath + "/";
-            var newPrefixWithSlash = newPrefix + "/";
-            var collision = Object.keys(pData.files).some(function(path) {
-                return path === newPrefix || path.startsWith(newPrefixWithSlash);
-            });
-            if(collision) { showToast("⚠️ Ya existe una carpeta o elemento con ese nombre."); return; }
+            var newPrefix = parentPrefix ? (parentPrefix + '/' + newFolderName) : newFolderName;
+            var oldPrefix = subPath + '/';
+            var newPrefixWithSlash = newPrefix + '/';
+            var collision = Object.keys(pData.files).some(function(path) { return path === newPrefix || path.startsWith(newPrefixWithSlash); });
+            if(collision) { showToast('⚠️ Ya existe una carpeta o elemento con ese nombre.'); return; }
 
             function remapPath(path) {
                 if(path === subPath) return newPrefix;
                 if(path && path.startsWith(oldPrefix)) return newPrefixWithSlash + path.slice(oldPrefix.length);
                 return path;
+            }
+
+            var relations = [];
+            if(pData.splitMap) {
+                Object.keys(pData.splitMap).forEach(function(parent) {
+                    var children = pData.splitMap[parent];
+                    if(!Array.isArray(children)) return;
+                    children.forEach(function(child) {
+                        var meta = pData.splitMeta && pData.splitMeta[child] ? pData.splitMeta[child] : { attrs: '' };
+                        relations.push({ parent: parent, child: child, kind: splitKindForChild(child, meta), oldReference: meta.reference || getRelativeProjectPath(parent, child) });
+                    });
+                });
             }
 
             var pathMap = {};
@@ -2321,17 +2664,30 @@
                 pData.openSubfolders[newPrefix] = true;
             }
 
+            relations.forEach(function(rel) {
+                var newParent = remapPath(rel.parent);
+                var newChild = remapPath(rel.child);
+                var newRef = getRelativeProjectPath(newParent, newChild);
+                if(typeof pData.files[newParent] === 'string' && rel.oldReference !== newRef) {
+                    var rewritten = rewriteSplitReferenceLiteral(pData.files[newParent], rel.kind, rel.oldReference, newRef);
+                    pData.files[newParent] = rewritten.html;
+                }
+                if(pData.splitMeta && pData.splitMeta[newChild]) {
+                    pData.splitMeta[newChild].reference = newRef;
+                    pData.splitMeta[newChild].parent = newParent;
+                }
+            });
+
             Object.keys(pData.files).forEach(function(filePath) {
                 if(typeof pData.files[filePath] !== 'string') return;
                 Object.keys(pathMap).forEach(function(oldPath) {
-                    var markerRegex = new RegExp("<!--\\s*\\[SLAPY-SPLIT:\\s*" + escapeRegExp(oldPath) + "\\s*\\]\\s*-->", "g");
-                    pData.files[filePath] = pData.files[filePath].replace(markerRegex, "<!-- [SLAPY-SPLIT:" + pathMap[oldPath] + "] -->");
+                    pData.files[filePath] = pData.files[filePath].replace(legacySplitMarkerRegex(oldPath, 'g'), '<!-- [SLAPY-SPLIT:' + pathMap[oldPath] + '] -->');
                 });
             });
 
             saveLocalState(); renderExplorer(); renderTabs();
             if(appState.activePortafolio === pName && appState.activeFile && pData.files[appState.activeFile] !== undefined && editor) editor.setValue(pData.files[appState.activeFile]);
-            showToast("✏️ Carpeta renombrada a: " + newPrefix);
+            showToast('✏️ Carpeta renombrada a: ' + newPrefix);
         }
 
         function deleteSubfolder(pName, subPath, e) {
@@ -2339,7 +2695,7 @@
             var pData = appState.portafolios[pName];
             if(!pData || !pData.files) return;
             if(confirm("¿Eliminar la subcarpeta '" + subPath + "' y todos sus archivos?")) {
-                var prefix = subPath + "/";
+                var prefix = subPath + '/';
                 var deletedFiles = [];
                 Object.keys(pData.files).forEach(function(fName) {
                     if(fName === subPath || fName.startsWith(prefix)) deletedFiles.push(fName);
@@ -2360,11 +2716,8 @@
                         Object.keys(pData.splitMap).forEach(function(parent) {
                             var children = pData.splitMap[parent];
                             if(!Array.isArray(children) || !children.includes(fName)) return;
-                            pData.splitMap[parent] = children.filter(function(c) { return c !== fName; });
-                            if(pData.files[parent] !== undefined) {
-                                var markerRegex = new RegExp("<!--\\s*\\[SLAPY-SPLIT:\\s*" + escapeRegExp(fName) + "\\s*\\]\\s*-->", "g");
-                                pData.files[parent] = pData.files[parent].replace(markerRegex, "");
-                            }
+                            removeSplitChildReferenceFromParent(pData, parent, fName);
+                            pData.splitMap[parent] = children.filter(function(child) { return child !== fName; });
                         });
                     }
 
@@ -2374,7 +2727,7 @@
                     removeTab(pName, fName);
                     if(appState.activePortafolio === pName && appState.activeFile === fName) {
                         appState.activeFile = null;
-                        if(editor) editor.setValue("");
+                        if(editor) editor.setValue('');
                     }
                 });
 
@@ -2383,10 +2736,7 @@
                         if(folder === subPath || folder.startsWith(prefix)) delete pData.openSubfolders[folder];
                     });
                 }
-                saveLocalState();
-                renderExplorer();
-                checkEmptyState();
-                showToast("🗑 Subcarpeta eliminada");
+                saveLocalState(); renderExplorer(); checkEmptyState(); showToast('🗑 Subcarpeta eliminada');
             }
         }
 
@@ -2456,17 +2806,16 @@
             var parts = oldName.split('/');
             var oldFileName = parts.pop();
             var folderPrefix = parts.join('/');
-
-            var newFileName = prompt("Renombrar archivo:", oldFileName);
-            if(!newFileName || newFileName.trim() === "" || newFileName === oldFileName) return;
+            var newFileName = prompt('Renombrar archivo:', oldFileName);
+            if(!newFileName || newFileName.trim() === '' || newFileName === oldFileName) return;
             newFileName = newFileName.trim();
 
-            var newName = folderPrefix ? (folderPrefix + "/" + newFileName) : newFileName;
+            var newName = folderPrefix ? (folderPrefix + '/' + newFileName) : newFileName;
             var pData = appState.portafolios[pName];
             if(!pData || (pData.files && pData.files[newName] !== undefined)) return;
-            
+            var movedMeta = pData.splitMeta && pData.splitMeta[oldName] ? pData.splitMeta[oldName] : null;
+
             pData.files[newName] = pData.files[oldName];
-            
             if(pData.localHistory && pData.localHistory[oldName]) {
                 pData.localHistory[newName] = pData.localHistory[oldName];
                 delete pData.localHistory[oldName];
@@ -2474,32 +2823,35 @@
             if(pData.splitMap && pData.splitMap[oldName]) {
                 pData.splitMap[newName] = pData.splitMap[oldName];
                 delete pData.splitMap[oldName];
+                pData.splitMap[newName].forEach(function(child) {
+                    if(pData.splitMeta && pData.splitMeta[child]) pData.splitMeta[child].parent = newName;
+                });
             }
-            if(pData.splitMeta && pData.splitMeta[oldName]) {
-                pData.splitMeta[newName] = pData.splitMeta[oldName];
+            if(movedMeta) {
+                pData.splitMeta[newName] = movedMeta;
                 delete pData.splitMeta[oldName];
             }
 
-            // Si el archivo renombrado es hijo de un HTML separado, actualiza la referencia y su marcador.
             if(pData.splitMap) {
                 Object.keys(pData.splitMap).forEach(function(parent) {
                     var children = pData.splitMap[parent];
                     if(!Array.isArray(children)) return;
                     var childIndex = children.indexOf(oldName);
-                    if(childIndex > -1) {
-                        children[childIndex] = newName;
-                        if(pData.files[parent] !== undefined) {
-                            var markerRegex = new RegExp("<!--\\s*\\[SLAPY-SPLIT:\\s*" + escapeRegExp(oldName) + "\\s*\\]\\s*-->", "g");
-                            pData.files[parent] = pData.files[parent].replace(markerRegex, function() {
-                                return "<!-- [SLAPY-SPLIT:" + newName + "] -->";
-                            });
-                        }
+                    if(childIndex < 0) return;
+                    var meta = movedMeta || (pData.splitMeta && pData.splitMeta[newName]) || { attrs: '' };
+                    var kind = splitKindForChild(oldName, meta);
+                    if(typeof pData.files[parent] === 'string') {
+                        var rewritten = rewriteStandardSplitReference(pData.files[parent], parent, oldName, newName, kind, meta.reference);
+                        var markerRegex = legacySplitMarkerRegex(oldName, 'g');
+                        pData.files[parent] = rewritten.html.replace(markerRegex, '<!-- [SLAPY-SPLIT:' + newName + '] -->');
+                        meta.reference = rewritten.reference;
+                        meta.parent = parent;
                     }
+                    children[childIndex] = newName;
                 });
             }
 
             delete pData.files[oldName];
-            
             var tabs = pData.openTabs || [];
             var idx = tabs.indexOf(oldName);
             if(idx > -1) tabs[idx] = newName;
@@ -2511,27 +2863,23 @@
             e.stopPropagation();
             var pData = appState.portafolios[pName];
             if(!pData || !pData.files) return;
-            
-            if(confirm("¿Eliminar " + fName + "?")) {
+
+            if(confirm('¿Eliminar ' + fName + '?')) {
                 if(pData.splitMap && Array.isArray(pData.splitMap[fName])) {
-                    pData.splitMap[fName].forEach(function(c) {
-                        delete pData.files[c]; removeTab(pName, c);
-                        if(pData.splitMeta) delete pData.splitMeta[c];
-                        if(pData.localHistory) delete pData.localHistory[c];
+                    pData.splitMap[fName].forEach(function(child) {
+                        delete pData.files[child]; removeTab(pName, child);
+                        if(pData.splitMeta) delete pData.splitMeta[child];
+                        if(pData.localHistory) delete pData.localHistory[child];
                     });
                     delete pData.splitMap[fName];
                 }
 
-                // Si era hijo de otro Split, elimina la referencia y el marcador del padre.
                 if(pData.splitMap) {
                     Object.keys(pData.splitMap).forEach(function(parent) {
                         var children = pData.splitMap[parent];
                         if(!Array.isArray(children) || !children.includes(fName)) return;
-                        pData.splitMap[parent] = children.filter(function(c) { return c !== fName; });
-                        if(pData.files[parent] !== undefined) {
-                            var markerRegex = new RegExp("<!--\\s*\\[SLAPY-SPLIT:\\s*" + escapeRegExp(fName) + "\\s*\\]\\s*-->", "g");
-                            pData.files[parent] = pData.files[parent].replace(markerRegex, "");
-                        }
+                        removeSplitChildReferenceFromParent(pData, parent, fName);
+                        pData.splitMap[parent] = children.filter(function(child) { return child !== fName; });
                     });
                 }
 
@@ -2542,7 +2890,7 @@
                 if(appState.activePortafolio === pName && appState.activeFile === fName) {
                     var tabs = pData.openTabs || [];
                     if(tabs.length > 0) openFile(pName, tabs[tabs.length - 1]);
-                    else { appState.activeFile = null; if(editor) editor.setValue(""); checkEmptyState();}
+                    else { appState.activeFile = null; if(editor) editor.setValue(''); checkEmptyState(); }
                 }
                 saveLocalState(); renderExplorer();
             }
@@ -2592,6 +2940,7 @@
                 }
             });
             container.innerHTML = html;
+            updateMobileFileContext();
         }
 
         function activatePortafolio(pName) {
@@ -2671,6 +3020,8 @@
 
             var searchPanel = document.getElementById('editor-search-panel');
             if(searchPanel && searchPanel.classList.contains('active')) updateSearch(true);
+            updateMobileFileContext();
+            if(isPhoneLayout()) closeMobileExplorer();
         }
 
         function removeTab(pName, fName) {
@@ -2726,13 +3077,225 @@
             return candidate;
         }
 
+        function normalizeProjectPath(path) {
+            var raw = String(path == null ? '' : path).replace(/\\/g, '/');
+            var out = [];
+            raw.split('/').forEach(function(part) {
+                if(!part || part === '.') return;
+                if(part === '..') {
+                    if(out.length && out[out.length - 1] !== '..') out.pop();
+                    else out.push('..');
+                } else out.push(part);
+            });
+            return out.join('/');
+        }
+
+        function projectDirname(path) {
+            var normalized = normalizeProjectPath(path);
+            var i = normalized.lastIndexOf('/');
+            return i > -1 ? normalized.slice(0, i) : '';
+        }
+
+        function projectBasename(path) {
+            var normalized = normalizeProjectPath(path);
+            var i = normalized.lastIndexOf('/');
+            return i > -1 ? normalized.slice(i + 1) : normalized;
+        }
+
+        function joinProjectPath(dir, name) {
+            return normalizeProjectPath((dir ? dir + '/' : '') + (name || ''));
+        }
+
+        function getRelativeProjectPath(fromFile, toFile) {
+            var fromDir = projectDirname(fromFile);
+            var fromParts = fromDir ? fromDir.split('/') : [];
+            var toPath = normalizeProjectPath(toFile);
+            var toParts = toPath ? toPath.split('/') : [];
+            var i = 0;
+            while(i < fromParts.length && i < toParts.length && fromParts[i] === toParts[i]) i++;
+            var rel = [];
+            for(var up = i; up < fromParts.length; up++) rel.push('..');
+            rel = rel.concat(toParts.slice(i));
+            return rel.join('/') || projectBasename(toFile);
+        }
+
+        function escapeHtmlAttribute(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function decodeHtmlReference(value) {
+            return String(value == null ? '' : value)
+                .replace(/&quot;/gi, '"')
+                .replace(/&#39;|&#x27;/gi, "'")
+                .replace(/&lt;/gi, '<')
+                .replace(/&gt;/gi, '>')
+                .replace(/&amp;/gi, '&');
+        }
+
+        function resolveProjectReference(parentFile, reference) {
+            var ref = decodeHtmlReference(reference).trim();
+            if(!ref || ref.charAt(0) === '#' || /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(ref)) return null;
+            ref = ref.split('#')[0].split('?')[0];
+            if(!ref) return null;
+            if(ref.charAt(0) === '/') return normalizeProjectPath(ref.slice(1));
+            return normalizeProjectPath(joinProjectPath(projectDirname(parentFile), ref));
+        }
+
+        function removeHtmlAttribute(attrs, name) {
+            var escaped = escapeRegExp(name);
+            var reQuoted = new RegExp('\\s+' + escaped + '\\s*=\\s*(["\\\'])[^"\\\']*\\1', 'gi');
+            var reBare = new RegExp('\\s+' + escaped + '\\s*=\\s*[^\\s>]+', 'gi');
+            var reBool = new RegExp('\\s+' + escaped + '(?=\\s|$)', 'gi');
+            return String(attrs || '').replace(reQuoted, '').replace(reBare, '').replace(reBool, '');
+        }
+
+        function getHtmlAttribute(attrs, name) {
+            var escaped = escapeRegExp(name);
+            var quoted = new RegExp('(?:^|\\s)' + escaped + '\\s*=\\s*(["\\\'])(.*?)\\1', 'i').exec(String(attrs || ''));
+            if(quoted) return quoted[2];
+            var bare = new RegExp('(?:^|\\s)' + escaped + '\\s*=\\s*([^\\s>]+)', 'i').exec(String(attrs || ''));
+            return bare ? bare[1] : null;
+        }
+
+        function isExecutableInlineScript(attrs) {
+            var type = getHtmlAttribute(attrs, 'type');
+            if(type == null || String(type).trim() === '') return true;
+            type = String(type).trim().toLowerCase();
+            return type === 'module' || type === 'text/javascript' || type === 'application/javascript' ||
+                type === 'text/ecmascript' || type === 'application/ecmascript' || type === 'text/jscript';
+        }
+
+        function externalScriptAttrs(attrs) {
+            var out = String(attrs || '');
+            ['src', 'async', 'defer', 'integrity', 'crossorigin', 'referrerpolicy'].forEach(function(name) {
+                out = removeHtmlAttribute(out, name);
+            });
+            return out;
+        }
+
+        function linkAttrsFromStyle(attrs) {
+            var out = String(attrs || '');
+            ['href', 'rel'].forEach(function(name) { out = removeHtmlAttribute(out, name); });
+            return out;
+        }
+
+        function splitKindForChild(child, meta) {
+            if(meta && meta.kind) return meta.kind;
+            if(/\.css$/i.test(child)) return 'css';
+            if(/\.json$/i.test(child)) return 'json';
+            return 'js';
+        }
+
+        function buildInlineSplitBlock(child, content, meta) {
+            meta = meta || { attrs: '' };
+            var attrs = meta.attrs || '';
+            var kind = splitKindForChild(child, meta);
+            if(kind === 'css') return '<style' + attrs + '>\n' + content + '\n</st' + 'yle>';
+            if(kind === 'json') {
+                if(!/\btype\s*=/i.test(attrs)) attrs = ' type="application/json"' + attrs;
+                return '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>';
+            }
+            return '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>';
+        }
+
+        function collectStandardSplitReferences(html, parentFile, childFile, kind) {
+            var matches = [];
+            var target = normalizeProjectPath(childFile);
+            if(kind === 'css') {
+                var linkRe = /<link\b[^>]*>/gi, lm;
+                while((lm = linkRe.exec(html))) {
+                    var href = getHtmlAttribute(lm[0].slice(5, -1), 'href');
+                    if(href != null && resolveProjectReference(parentFile, href) === target) matches.push({ index: lm.index, text: lm[0] });
+                }
+            } else {
+                var scriptRe = /<script\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1[^>]*>\s*<\/script\s*>/gi, sm;
+                while((sm = scriptRe.exec(html))) {
+                    if(resolveProjectReference(parentFile, sm[2]) === target) matches.push({ index: sm.index, text: sm[0] });
+                }
+            }
+            return matches;
+        }
+
+        function replaceOneStandardSplitReference(html, parentFile, childFile, kind, replacement) {
+            var matches = collectStandardSplitReferences(html, parentFile, childFile, kind);
+            if(matches.length !== 1) return { html: html, count: matches.length };
+            var m = matches[0];
+            return { html: html.slice(0, m.index) + replacement + html.slice(m.index + m.text.length), count: 1 };
+        }
+
+        function rewriteSplitReferenceLiteral(html, kind, oldRef, newRef) {
+            var oldDecoded = decodeHtmlReference(oldRef);
+            var newEscaped = escapeHtmlAttribute(newRef);
+            var count = 0;
+            if(kind === 'css') {
+                html = html.replace(/<link\b[^>]*>/gi, function(tag) {
+                    var href = getHtmlAttribute(tag.slice(5, -1), 'href');
+                    if(href == null || decodeHtmlReference(href) !== oldDecoded) return tag;
+                    count++;
+                    return tag.replace(/(\bhref\s*=\s*)(["'])([^"']*)(["'])/i, function(_, p1, q1, _v, q2) { return p1 + q1 + newEscaped + q2; });
+                });
+            } else {
+                html = html.replace(/<script\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1[^>]*>\s*<\/script\s*>/gi, function(tag, _q, src) {
+                    if(decodeHtmlReference(src) !== oldDecoded) return tag;
+                    count++;
+                    return tag.replace(/(\bsrc\s*=\s*)(["'])([^"']*)(["'])/i, function(_, p1, q1, _v, q2) { return p1 + q1 + newEscaped + q2; });
+                });
+            }
+            return { html: html, count: count };
+        }
+
+        function rewriteStandardSplitReference(html, parentFile, oldChild, newChild, kind, oldReference) {
+            var oldRef = oldReference || getRelativeProjectPath(parentFile, oldChild);
+            var newRef = getRelativeProjectPath(parentFile, newChild);
+            var result = rewriteSplitReferenceLiteral(html, kind, oldRef, newRef);
+            return { html: result.html, count: result.count, reference: newRef };
+        }
+
+        function removeStandardSplitReferences(html, parentFile, childFile, kind) {
+            var target = normalizeProjectPath(childFile);
+            var count = 0;
+            if(kind === 'css') {
+                html = html.replace(/<link\b[^>]*>/gi, function(tag) {
+                    var href = getHtmlAttribute(tag.slice(5, -1), 'href');
+                    if(href != null && resolveProjectReference(parentFile, href) === target) { count++; return ''; }
+                    return tag;
+                });
+            } else {
+                html = html.replace(/<script\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1[^>]*>\s*<\/script\s*>/gi, function(tag, _q, src) {
+                    if(resolveProjectReference(parentFile, src) === target) { count++; return ''; }
+                    return tag;
+                });
+            }
+            return { html: html, count: count };
+        }
+
+        function legacySplitMarkerRegex(child, flags) {
+            return new RegExp('<!--\\s*\\[SLAPY-SPLIT:\\s*' + escapeRegExp(child) + '\\s*\\]\\s*-->', flags || 'i');
+        }
+
+        function removeSplitChildReferenceFromParent(pData, parent, child) {
+            if(!pData || !pData.files || typeof pData.files[parent] !== 'string') return 0;
+            var meta = pData.splitMeta && pData.splitMeta[child] ? pData.splitMeta[child] : { attrs: '' };
+            var kind = splitKindForChild(child, meta);
+            var result = removeStandardSplitReferences(pData.files[parent], parent, child, kind);
+            var html = result.html;
+            var marker = legacySplitMarkerRegex(child, 'g');
+            var markerCount = (html.match(marker) || []).length;
+            html = html.replace(marker, '');
+            pData.files[parent] = html;
+            return result.count + markerCount;
+        }
+
         function toggleSplitMode() {
             var pName = appState.activePortafolio;
             if(!pName || !appState.portafolios[pName]) return;
-            
-            if(editor && appState.activeFile) {
-                appState.portafolios[pName].files[appState.activeFile] = editor.getValue();
-            }
+
+            if(editor && appState.activeFile) appState.portafolios[pName].files[appState.activeFile] = editor.getValue();
 
             var htmlFileName = appState.activeFile;
             var pData = appState.portafolios[pName];
@@ -2741,26 +3304,24 @@
             if(!pData.files) pData.files = {};
             if(!pData.openTabs) pData.openTabs = [];
 
-            if(!htmlFileName || !htmlFileName.endsWith('.html')) {
-                var foundParent = Object.keys(pData.splitMap).find(function(h) { 
-                    return Array.isArray(pData.splitMap[h]) && pData.splitMap[h].includes(htmlFileName); 
+            if(!htmlFileName || !/\.html$/i.test(htmlFileName)) {
+                var foundParent = Object.keys(pData.splitMap).find(function(h) {
+                    return Array.isArray(pData.splitMap[h]) && pData.splitMap[h].includes(htmlFileName);
                 });
                 if(foundParent) htmlFileName = foundParent;
-                else {
-                    for(var f in pData.files) { if(f.endsWith('.html')) { htmlFileName = f; break; } }
-                }
+                else for(var f in pData.files) { if(/\.html$/i.test(f)) { htmlFileName = f; break; } }
             }
-            if(!htmlFileName || pData.files[htmlFileName] === undefined) { showToast("Abre un archivo HTML"); return; }
+            if(!htmlFileName || pData.files[htmlFileName] === undefined) { showToast('Abre un archivo HTML'); return; }
 
             var splitChildren = pData.splitMap[htmlFileName] || [];
-            var htmlCode = pData.files[htmlFileName] || "";
+            var htmlCode = pData.files[htmlFileName] || '';
 
             if(!splitChildren || splitChildren.length === 0) {
                 var commentMatches = htmlCode.match(/<!--\s*\[SLAPY-SPLIT:(.*?)\]\s*-->/gi);
                 if(commentMatches && commentMatches.length > 0) {
                     splitChildren = [];
-                    commentMatches.forEach(function(m) {
-                        var match = m.match(/<!--\s*\[SLAPY-SPLIT:(.*?)\]\s*-->/i);
+                    commentMatches.forEach(function(marker) {
+                        var match = marker.match(/<!--\s*\[SLAPY-SPLIT:(.*?)\]\s*-->/i);
                         if(match && match[1] && pData.files[match[1].trim()] !== undefined) splitChildren.push(match[1].trim());
                     });
                     pData.splitMap[htmlFileName] = splitChildren;
@@ -2769,98 +3330,98 @@
 
             var btn = document.getElementById('btn-split-toggle');
 
-            if(splitChildren.length === 0) { 
-                var cssCount = 0, jsCount = 0, jsonCount = 0;
+            if(splitChildren.length === 0) {
+                var cssCount = 0, jsCount = 0;
                 var newChildren = [];
-                var baseName = htmlFileName.replace(/\.html$/i, '');
-                
+                var htmlDir = projectDirname(htmlFileName);
+                var baseName = projectBasename(htmlFileName).replace(/\.html$/i, '');
+
                 var styleTagRegex = /<style([^>]*)>([\s\S]*?)<\/style>/gi;
-                htmlCode = htmlCode.replace(styleTagRegex, function(m, attrs, inner) {
-                    var contenido = inner.trim(); if(contenido === "") return m; 
+                htmlCode = htmlCode.replace(styleTagRegex, function(original, attrs, inner) {
+                    var content = inner.trim();
+                    if(content === '') return original;
                     cssCount++;
-                    var desired = baseName + "-style" + (cssCount===1?"":cssCount) + ".css";
-                    var fName = getUniqueSplitFileName(pData, desired);
-                    pData.files[fName] = contenido; newChildren.push(fName);
-                    pData.splitMeta[fName] = { attrs: attrs || "" };
-                    if(!pData.openTabs.includes(fName)) pData.openTabs.push(fName);
-                    return "<!-- [SLAPY-SPLIT:" + fName + "] -->";
+                    var desiredLeaf = baseName + '-style' + (cssCount === 1 ? '' : cssCount) + '.css';
+                    var child = getUniqueSplitFileName(pData, joinProjectPath(htmlDir, desiredLeaf));
+                    var reference = getRelativeProjectPath(htmlFileName, child);
+                    pData.files[child] = content;
+                    newChildren.push(child);
+                    pData.splitMeta[child] = { attrs: attrs || '', kind: 'css', reference: reference, parent: htmlFileName };
+                    if(!pData.openTabs.includes(child)) pData.openTabs.push(child);
+                    return '<link rel="stylesheet" href="' + escapeHtmlAttribute(reference) + '"' + linkAttrsFromStyle(attrs || '') + '>';
                 });
 
                 var scriptTagRegex = /<script([^>]*)>([\s\S]*?)<\/script>/gi;
-                htmlCode = htmlCode.replace(scriptTagRegex, function(m, attrs, inner) {
-                    if (attrs.toLowerCase().includes('src=')) return m;
-                    var contenido = inner.trim(); if(contenido === "") return m;
-                    
-                    var desired = "";
-                    if(attrs.toLowerCase().includes('application/json')) {
-                        jsonCount++; var idMatch = attrs.match(/id=['"]([^'"]+)['"]/i);
-                        desired = idMatch ? idMatch[1] + ".json" : baseName + "-data" + (jsonCount===1?"":jsonCount) + ".json";
-                    } else {
-                        jsCount++; 
-                        desired = baseName + "-script" + (jsCount===1?"":jsCount) + ".js";
-                    }
-                    var fName = getUniqueSplitFileName(pData, desired);
-                    pData.files[fName] = contenido; newChildren.push(fName);
-                    pData.splitMeta[fName] = { attrs: attrs || "" };
-                    if(!pData.openTabs.includes(fName)) pData.openTabs.push(fName);
-                    return "<!-- [SLAPY-SPLIT:" + fName + "] -->";
+                htmlCode = htmlCode.replace(scriptTagRegex, function(original, attrs, inner) {
+                    if(/\bsrc\s*=/i.test(attrs || '')) return original;
+                    var content = inner.trim();
+                    if(content === '' || !isExecutableInlineScript(attrs || '')) return original;
+                    jsCount++;
+                    var desiredLeaf = baseName + '-script' + (jsCount === 1 ? '' : jsCount) + '.js';
+                    var child = getUniqueSplitFileName(pData, joinProjectPath(htmlDir, desiredLeaf));
+                    var reference = getRelativeProjectPath(htmlFileName, child);
+                    pData.files[child] = content;
+                    newChildren.push(child);
+                    pData.splitMeta[child] = { attrs: attrs || '', kind: 'js', reference: reference, parent: htmlFileName };
+                    if(!pData.openTabs.includes(child)) pData.openTabs.push(child);
+                    return '<script src="' + escapeHtmlAttribute(reference) + '"' + externalScriptAttrs(attrs || '') + '></scr' + 'ipt>';
                 });
 
                 if(newChildren.length > 0) {
                     pData.files[htmlFileName] = htmlCode;
                     pData.splitMap[htmlFileName] = newChildren;
-                    if(btn) { btn.innerText = "Un-Split"; btn.classList.add("active-tool"); }
+                    if(btn) { btn.innerText = 'Un-Split'; btn.classList.add('active-tool'); }
                     saveLocalState(); renderExplorer(); openFile(pName, htmlFileName);
-                } else {
-                    showToast("No hay CSS/JS interno para separar.");
-                }
-
-            } else { 
-                splitChildren.slice().forEach(function(f) {
-                    if(pData.files[f] === undefined) return;
-                    var content = pData.files[f] || "";
-                    var meta = pData.splitMeta && pData.splitMeta[f] ? pData.splitMeta[f] : { attrs: "" };
-                    var attrs = meta.attrs || "";
-                    var fullBlock = "";
-                    
-                    if(f.endsWith('.css')) {
-                        fullBlock = '<style' + attrs + '>\n' + content + '\n</st' + 'yle>'; 
-                    } else if(f.endsWith('.json')) {
-                        if(!attrs.toLowerCase().includes('type=')) attrs = ' type="application/json"' + attrs;
-                        if(!attrs.toLowerCase().includes('id=')) attrs += ' id="' + escapeHtmlText(f.split('.')[0]) + '"';
-                        fullBlock = '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>';
-                    } else if(f.endsWith('.js')) {
-                        fullBlock = '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>'; 
-                    }
-                    
-                    var markerRegex = new RegExp("<!--\\s*\\[SLAPY-SPLIT:\\s*" + escapeRegExp(f) + "\\s*\\]\\s*-->", "i");
-                    
-                    if(markerRegex.test(htmlCode)) {
-                        htmlCode = htmlCode.replace(markerRegex, function() { return fullBlock; });
-                    } else {
-                        // Compatibilidad con proyectos separados por versiones anteriores, sin marcadores.
-                        if(f.endsWith('.css')) {
-                            if(/<\/head>/i.test(htmlCode)) htmlCode = htmlCode.replace(/<\/head>/i, function() { return fullBlock + '\n</head>'; });
-                            else htmlCode = fullBlock + '\n' + htmlCode;
-                        } else {
-                            if(/<\/body>/i.test(htmlCode)) htmlCode = htmlCode.replace(/<\/body>/i, function() { return fullBlock + '\n</body>'; });
-                            else htmlCode = htmlCode + '\n' + fullBlock;
-                        }
-                    }
-
-                    delete pData.files[f]; removeTab(pName, f);
-                    if(pData.splitMeta) delete pData.splitMeta[f];
-                    if(pData.localHistory) delete pData.localHistory[f];
-                });
-
-                htmlCode = htmlCode.replace(/<!--\s*\[SLAPY-SPLIT:.*?\]\s*-->/gi, '');
-
-                pData.files[htmlFileName] = htmlCode;
-                pData.splitMap[htmlFileName] = [];
-                
-                if(btn) { btn.innerText = "Split"; btn.classList.remove("active-tool"); }
-                saveLocalState(); renderExplorer(); openFile(pName, htmlFileName);
+                } else showToast('No hay CSS/JavaScript ejecutable interno para separar.');
+                return;
             }
+
+            var plan = [];
+            var failure = null;
+            splitChildren.slice().some(function(child) {
+                if(pData.files[child] === undefined) {
+                    failure = 'falta el archivo hijo ' + child;
+                    return true;
+                }
+                var meta = pData.splitMeta && pData.splitMeta[child] ? pData.splitMeta[child] : { attrs: '' };
+                var kind = splitKindForChild(child, meta);
+                var standard = collectStandardSplitReferences(htmlCode, htmlFileName, child, kind);
+                var markerMatches = htmlCode.match(legacySplitMarkerRegex(child, 'g')) || [];
+                if(standard.length === 1 && markerMatches.length === 0) plan.push({ child: child, meta: meta, kind: kind, mode: 'standard' });
+                else if(standard.length === 0 && markerMatches.length === 1) plan.push({ child: child, meta: meta, kind: kind, mode: 'legacy-marker' });
+                else {
+                    failure = 'referencia faltante o ambigua para ' + child + ' (estándar=' + standard.length + ', legacy=' + markerMatches.length + ')';
+                    return true;
+                }
+                return false;
+            });
+
+            if(failure) {
+                console.warn('Un-Split abortado:', failure);
+                showToast('⚠️ Un-Split abortado: ' + failure);
+                return;
+            }
+
+            plan.forEach(function(item) {
+                var child = item.child;
+                var block = buildInlineSplitBlock(child, pData.files[child] || '', item.meta);
+                if(item.mode === 'standard') {
+                    var replaced = replaceOneStandardSplitReference(htmlCode, htmlFileName, child, item.kind, block);
+                    htmlCode = replaced.html;
+                } else htmlCode = htmlCode.replace(legacySplitMarkerRegex(child, 'i'), block);
+            });
+
+            plan.forEach(function(item) {
+                delete pData.files[item.child];
+                removeTab(pName, item.child);
+                if(pData.splitMeta) delete pData.splitMeta[item.child];
+                if(pData.localHistory) delete pData.localHistory[item.child];
+            });
+
+            pData.files[htmlFileName] = htmlCode;
+            pData.splitMap[htmlFileName] = [];
+            if(btn) { btn.innerText = 'Split'; btn.classList.remove('active-tool'); }
+            saveLocalState(); renderExplorer(); openFile(pName, htmlFileName);
         }
 
         // =========================================================
@@ -2893,51 +3454,49 @@
 
             var combined = pData.files[htmlFileName];
             var splitChildren = (pData.splitMap && pData.splitMap[htmlFileName]) || [];
-            var cssCode = ""; var jsCode = "";
+            var cssCode = ''; var jsCode = '';
 
-            splitChildren.forEach(function(fName) {
-                if(pData.files[fName] === undefined) return;
-                var content = pData.files[fName] || "";
-                var meta = pData.splitMeta && pData.splitMeta[fName] ? pData.splitMeta[fName] : { attrs: "" };
-                var attrs = meta.attrs || "";
-                var fullBlock = "";
-
-                if(fName.endsWith('.css')) {
-                    fullBlock = '<style' + attrs + '>\n' + content + '\n</st' + 'yle>\n';
-                } else if(fName.endsWith('.json')) {
-                    if(!attrs.toLowerCase().includes('type=')) attrs = ' type="application/json"' + attrs;
-                    if(!attrs.toLowerCase().includes('id=')) attrs += ' id="' + escapeHtmlText(fName.split('.')[0]) + '"';
-                    fullBlock = '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>\n';
-                } else if(fName.endsWith('.js')) {
-                    fullBlock = '<script' + attrs + '>\n' + content + '\n</scr' + 'ipt>\n';
-                }
-
-                var markerRegex = new RegExp("<!--\\s*\\[SLAPY-SPLIT:\\s*" + escapeRegExp(fName) + "\\s*\\]\\s*-->", "i");
+            splitChildren.forEach(function(child) {
+                if(pData.files[child] === undefined) return;
+                var content = pData.files[child] || '';
+                var meta = pData.splitMeta && pData.splitMeta[child] ? pData.splitMeta[child] : { attrs: '' };
+                var kind = splitKindForChild(child, meta);
+                var fullBlock = buildInlineSplitBlock(child, content, meta) + '\n';
+                var markerRegex = legacySplitMarkerRegex(child, 'i');
                 if(markerRegex.test(combined)) {
-                    combined = combined.replace(markerRegex, function() { return fullBlock; });
-                } else if(fName.endsWith('.css')) {
-                    cssCode += fullBlock;
-                } else {
-                    jsCode += fullBlock;
+                    combined = combined.replace(markerRegex, fullBlock);
+                } else if(collectStandardSplitReferences(combined, htmlFileName, child, kind).length === 0) {
+                    if(kind === 'css') cssCode += fullBlock;
+                    else jsCode += fullBlock;
                 }
             });
 
-            // RESOLUCIÓN AUTOMÁTICA DE SUBCARPETAS Y ARCHIVOS VINCULADOS EN HTML
-            Object.keys(pData.files || {}).forEach(function(relPath) {
-                var content = pData.files[relPath] || "";
-                var safePath = escapeRegExp(relPath);
-                var altPath = escapeRegExp("./" + relPath);
-                
-                if(relPath.endsWith('.css')) {
-                    var re1 = new RegExp("<link[^>]*href=[\"'](" + safePath + "|" + altPath + ")[\"'][^>]*>", "gi");
-                    combined = combined.replace(re1, function() { return '<style>\n' + content + '\n</style>'; });
-                } else if(relPath.endsWith('.js')) {
-                    var re2 = new RegExp("<script[^>]*src=[\"'](" + safePath + "|" + altPath + ")[\"'][^>]*></scr" + "ipt>", "gi");
-                    combined = combined.replace(re2, function() { return '<script>\n' + content + '\n</scr' + 'ipt>'; });
-                } else if(content.startsWith('data:image/')) {
-                    var re3 = new RegExp("src=[\"'](" + safePath + "|" + altPath + ")[\"']", "gi");
-                    combined = combined.replace(re3, function() { return 'src="' + content + '"'; });
-                }
+            // Resuelve referencias web estándar contra el directorio del HTML padre para Preview.
+            combined = combined.replace(/<link\b[^>]*>/gi, function(tag) {
+                var attrs = tag.slice(5, -1);
+                var href = getHtmlAttribute(attrs, 'href');
+                if(href == null) return tag;
+                var resolved = resolveProjectReference(htmlFileName, href);
+                if(!resolved || !pData.files || pData.files[resolved] === undefined || !/\.css$/i.test(resolved)) return tag;
+                var styleAttrs = removeHtmlAttribute(removeHtmlAttribute(attrs, 'href'), 'rel');
+                return '<style' + styleAttrs + '>\n' + (pData.files[resolved] || '') + '\n</style>';
+            });
+
+            combined = combined.replace(/<script\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1[^>]*>\s*<\/script\s*>/gi, function(tag, _quote, src) {
+                var resolved = resolveProjectReference(htmlFileName, src);
+                if(!resolved || !pData.files || pData.files[resolved] === undefined || !/\.js$/i.test(resolved)) return tag;
+                var openEnd = tag.indexOf('>');
+                var attrs = tag.slice(7, openEnd);
+                attrs = removeHtmlAttribute(attrs, 'src');
+                return '<script' + attrs + '>\n' + (pData.files[resolved] || '') + '\n</scr' + 'ipt>';
+            });
+
+            Object.keys(pData.files || {}).forEach(function(filePath) {
+                var content = pData.files[filePath] || '';
+                if(!content.startsWith('data:image/')) return;
+                combined = combined.replace(/src\s*=\s*(["'])(.*?)\1/gi, function(match, quote, src) {
+                    return resolveProjectReference(htmlFileName, src) === normalizeProjectPath(filePath) ? ('src=' + quote + content + quote) : match;
+                });
             });
 
             if(cssCode) {
@@ -2988,7 +3547,75 @@
             showToast("✔ Código Ejecutado");
         }
 
+
+        function isPhoneLayout() {
+            return window.matchMedia('(max-width: 600px), (max-width: 932px) and (max-height: 500px) and (pointer: coarse)').matches;
+        }
+
+        function setMobileSurface(surface) {
+            if(surface !== 'preview') surface = 'code';
+            document.body.setAttribute('data-mobile-surface', surface);
+            var codeBtn = document.getElementById('mobile-surface-code');
+            var previewBtn = document.getElementById('mobile-surface-preview');
+            if(codeBtn) codeBtn.setAttribute('aria-selected', surface === 'code' ? 'true' : 'false');
+            if(previewBtn) previewBtn.setAttribute('aria-selected', surface === 'preview' ? 'true' : 'false');
+            if(surface === 'code') setTimeout(function() { if(editor) editor.refresh(); }, 30);
+        }
+
+        function updateMobileFileContext() {
+            var label = document.getElementById('mobile-active-file-name');
+            var closeBtn = document.getElementById('mobile-close-active-file');
+            var name = appState && appState.activeFile ? appState.activeFile : 'Sin archivo';
+            if(label) { label.textContent = name; label.title = name; label.setAttribute('aria-label', 'Archivo activo: ' + name); }
+            if(closeBtn) closeBtn.disabled = !(appState && appState.activeFile);
+        }
+
+        function closeMobileActiveFile() {
+            if(!appState || !appState.activeFile) return;
+            closeTab(appState.activeFile, { stopPropagation: function(){} });
+            updateMobileFileContext();
+        }
+
+        function closeMobileExplorer() {
+            var sb = document.getElementById('sidebar');
+            if(sb) sb.classList.remove('visible');
+            document.body.classList.remove('mobile-explorer-open');
+            var btn = document.getElementById('btn-pin-sidebar');
+            if(btn) btn.setAttribute('aria-expanded', 'false');
+        }
+
+        function toggleMobileOverflow() {
+            var open = !document.body.classList.contains('mobile-overflow-open');
+            document.body.classList.toggle('mobile-overflow-open', open);
+            var btn = document.getElementById('mobile-overflow-toggle');
+            if(btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        function closeMobileOverflow() {
+            document.body.classList.remove('mobile-overflow-open');
+            var btn = document.getElementById('mobile-overflow-toggle');
+            if(btn) btn.setAttribute('aria-expanded', 'false');
+        }
+
+        function syncMobileViewport() {
+            var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            document.documentElement.style.setProperty('--slapy-visible-vh', Math.max(320, Math.round(h)) + 'px');
+        }
+        syncMobileViewport();
+        window.addEventListener('resize', syncMobileViewport, { passive: true });
+        if(window.visualViewport) {
+            window.visualViewport.addEventListener('resize', syncMobileViewport, { passive: true });
+            window.visualViewport.addEventListener('scroll', syncMobileViewport, { passive: true });
+        }
+        document.body.setAttribute('data-mobile-surface', 'code');
+        window.addEventListener('resize', function() {
+            if(!isPhoneLayout()) {
+                closeMobileExplorer();
+                closeMobileOverflow();
+            }
+        }, { passive: true });
+
         function setLayout(mode) {
+            if(isPhoneLayout()) setMobileSurface(mode === 'preview' ? 'preview' : 'code');
             document.querySelectorAll('.header-center .view-controls button').forEach(function(b) { b.classList.remove('active'); });
             var targetBtn = document.querySelector('.header-center .view-controls button[onclick="setLayout(\''+mode+'\')"]');
             if(targetBtn) targetBtn.classList.add('active');
@@ -3016,9 +3643,16 @@
         var isSidebarPinned = true;
 
         function toggleSidebarPin() {
-            isSidebarPinned = !isSidebarPinned;
             var sb = document.getElementById('sidebar');
             var btn = document.getElementById('btn-pin-sidebar');
+            if(isPhoneLayout()) {
+                var open = !sb.classList.contains('visible');
+                sb.classList.toggle('visible', open);
+                document.body.classList.toggle('mobile-explorer-open', open);
+                if(btn) { btn.setAttribute('aria-expanded', open ? 'true' : 'false'); btn.title = open ? 'Cerrar Explorador' : 'Abrir Explorador'; }
+                return;
+            }
+            isSidebarPinned = !isSidebarPinned;
             
             if(isSidebarPinned) {
                 sb.classList.remove('unpinned', 'visible');
@@ -3966,7 +4600,7 @@
                 if(panel.classList.contains('active')) { 
                     panel.classList.remove('active'); btnMain.classList.remove('active-tool'); clearSearchState(); 
                 } else { 
-                    panel.classList.add('active'); btnMain.classList.add('active-tool'); document.getElementById('live-search-input').focus(); 
+                    panel.classList.add('active'); btnMain.classList.add('active-tool'); closeMobileOverflow(); document.getElementById('live-search-input').focus(); 
                 }
             }
         }
