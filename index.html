@@ -1,5 +1,5 @@
 <!--
-[SLAPY-VERSION: 1.3.0.2]
+[SLAPY-VERSION: 1.3.1.0]
 [SLAPY-TITLE: Identidad visual Propuesta 4 / DREV-004]
 [SLAPY-DESC: Rediseño visual DREV-004 dark-first con identidad aprobada Propuesta 4; preserva comportamiento, datos, integraciones y funcionalidad de 1.1.1.1.]
 -->
@@ -228,7 +228,7 @@
         .btn-primary:hover { background-color: #005f9e; }
 
         /* MODALES FLOTANTES */
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(2px); }
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 220; backdrop-filter: blur(2px); }
         .modal-overlay.active { display: flex; }
         .modal-box { background: var(--bg-panel); padding: 20px; border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative; max-height: 80vh; display: flex; flex-direction: column; }
         .modal-box h2 { margin: 0 0 15px 0; font-size: 16px; color: var(--text-bright); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
@@ -1413,8 +1413,8 @@
 <body>
 
     <!-- INPUTS OCULTOS -->
-    <input type="file" id="file-upload" multiple style="display:none" onchange="handleFileUpload(event)">
-    <input type="file" id="folder-upload" webkitdirectory directory multiple style="display:none" onchange="handleFolderUpload(event)">
+    <input type="file" id="file-upload" multiple accept="text/*,.html,.htm,.css,.js,.mjs,.cjs,.json,.md,.txt,.xml,.csv,.tsv,.yml,.yaml" style="display:none" onchange="handleFileUpload(event)" aria-label="file upload">
+    <input type="file" id="folder-upload" webkitdirectory directory multiple accept="text/*,.html,.htm,.css,.js,.mjs,.cjs,.json,.md,.txt,.xml,.csv,.tsv,.yml,.yaml" style="display:none" onchange="handleFolderUpload(event)" aria-label="folder upload">
 
     <header>
         <!-- LADO IZQUIERDO -->
@@ -1556,8 +1556,8 @@
                     
                     <div class="editor-search-panel" id="editor-search-panel">
                         <div class="search-row">
-                            <input type="text" id="live-search-input" placeholder="Buscar (Desde)..." oninput="updateSearch(true)">
-                            <input type="text" id="live-search-end" placeholder="Hasta (Ej. })..." style="display:none;" oninput="updateSearch(true)">
+                            <input type="text" id="live-search-input" placeholder="Buscar (Desde)..." oninput="scheduleSearchRefresh(true)" aria-label="Buscar (Desde)...">
+                            <input type="text" id="live-search-end" placeholder="Hasta (Ej. })..." style="display:none;" oninput="scheduleSearchRefresh(true)" aria-label="Hasta (Ej. })...">
                             <button class="btn-toggle-block" id="btn-block-search" onclick="toggleBlockSearch()" title="Modo Fragmento (Desde -> Hasta)">[..]</button>
                             <span class="info" id="search-count">0/0</span>
                             <button onclick="prevMatch()" title="Anterior">↑</button>
@@ -1565,13 +1565,13 @@
                             <button onclick="toggleSearch()" title="Cerrar">✖</button>
                         </div>
                         <div class="search-row" id="replace-row">
-                            <input type="text" id="live-replace-input" placeholder="Reemplazar por...">
+                            <input type="text" id="live-replace-input" placeholder="Reemplazar por..." aria-label="Reemplazar por...">
                             <button class="replace-btn" onclick="doReplace()">Reemplazar</button>
                             <button class="replace-btn" onclick="doReplaceAll()">Todo</button>
                         </div>
                     </div>
 
-                    <textarea id="main-editor"></textarea>
+                    <textarea id="main-editor" aria-label="main editor"></textarea>
                 </div>
                 
                 <div class="preview-section flex-half" id="preview-section">
@@ -1616,8 +1616,8 @@
             </div>
 
             <div class="auth-inputs">
-                <input type="email" id="email-input" class="input-dark" placeholder="Correo electrónico" onkeydown="checkEnterLogin(event)">
-                <input type="password" id="pass-input" class="input-dark" placeholder="Contraseña (mínimo 6 caracteres)" onkeydown="checkEnterLogin(event)">
+                <input type="email" id="email-input" class="input-dark" placeholder="Correo electrónico" onkeydown="checkEnterLogin(event)" aria-label="Correo electrónico">
+                <input type="password" id="pass-input" class="input-dark" placeholder="Contraseña (mínimo 6 caracteres)" onkeydown="checkEnterLogin(event)" aria-label="Contraseña (mínimo 6 caracteres)">
             </div>
             
             <button id="auth-action-btn" class="btn-primary btn-auth-modern" onclick="doAuthAction()">Entrar</button>
@@ -1630,8 +1630,8 @@
         <div class="modal-box" style="width: 300px;">
             <button class="close-modal" onclick="closeAccountModal()">✖</button>
             <h2>Configuración</h2>
-            <input type="text" id="acc-name" class="input-dark" placeholder="Tu Nombre o Apodo">
-            <input type="password" id="acc-pass" class="input-dark" placeholder="Nueva Contraseña (Opcional)">
+            <input type="text" id="acc-name" class="input-dark" placeholder="Tu Nombre o Apodo" aria-label="Tu Nombre o Apodo">
+            <input type="password" id="acc-pass" class="input-dark" placeholder="Nueva Contraseña (Opcional)" aria-label="Nueva Contraseña (Opcional)">
             <button class="btn-primary" onclick="updateAccount()">Guardar Cambios</button>
             
             <hr style="border: none; border-top: 1px solid var(--border); margin: 15px 0; width: 100%;">
@@ -1652,9 +1652,9 @@
             </div>
             
             <div id="cloud-save-section" class="info-content active">
-                <input type="text" id="commit-version" class="input-dark" placeholder="Versión (Ej. v1.0.0.0)">
-                <input type="text" id="commit-title" class="input-dark" placeholder="Título de la versión">
-                <textarea id="commit-desc" class="input-dark" placeholder="Descripción detallada de lo que hiciste..."></textarea>
+                <input type="text" id="commit-version" class="input-dark" placeholder="Versión (Ej. v1.0.0.0)" aria-label="Versión (Ej. v1.0.0.0)">
+                <input type="text" id="commit-title" class="input-dark" placeholder="Título de la versión" aria-label="Título de la versión">
+                <textarea id="commit-desc" class="input-dark" placeholder="Descripción detallada de lo que hiciste..." aria-label="Descripción detallada de lo que hiciste..."></textarea>
                 <button class="btn-primary" style="margin-top: 5px;" onclick="saveCommit()">☁️ Subir a la Nube</button>
             </div>
 
@@ -1691,11 +1691,10 @@
             </div>
 
             <div id="info-update" class="info-content">
-                <textarea id="update-code-input" class="input-dark" style="height: 180px; font-family: monospace; font-size: 11px; margin-bottom: 12px; resize: none; border-radius: 6px; padding: 10px;" placeholder="Pega aquí el código <!DOCTYPE html>... de la nueva versión"></textarea>
+                <textarea id="update-code-input" class="input-dark" style="height: 180px; font-family: monospace; font-size: 11px; margin-bottom: 12px; resize: none; border-radius: 6px; padding: 10px;" placeholder="Pega aquí el código HTML de la nueva versión" aria-label="Código HTML de actualización"></textarea>
                 
-                <button class="btn-primary btn-auth-modern" style="margin-top: 0; background: linear-gradient(180deg, #28a745, #1e7e34); border-top-color: #5cd078;" onclick="deployToGitHub()">
-                    🚀 Subir Actualización a GitHub
-                </button>
+                <button class="btn-primary btn-auth-modern" style="margin-top: 0; background: var(--bg-tertiary); border-color: var(--border); color: var(--text-muted);" type="button" onclick="deployToGitHub()" aria-label="Deploy seguro no configurado">🔒 Deploy seguro requerido</button>
+                <div id="github-deploy-security-note" class="empty-text" style="margin-top:8px;">El deploy directo con token en el navegador está deshabilitado por seguridad.</div>
             </div>
         </div>
     </div>
@@ -1703,6 +1702,10 @@
     <!-- SCRIPTS CORE DE LA APLICACIÓN -->
     <script>
         var STATE_KEY_BASE = 'slapy_state_v34';
+        var SLAPY_VERSION = '1.3.1.0';
+        var LOCAL_DEVICE_SCOPE = 'local-device';
+        var MAX_FIRESTORE_PROJECT_BYTES = 850 * 1024;
+        var LOCAL_SAVE_DEBOUNCE_MS = 350;
         var PREVIEW_STORAGE_PREFIX = 'slapy_preview_storage_v1';
         var PREVIEW_STORAGE_LIMITS = {
             key: 256,
@@ -1950,17 +1953,80 @@
             return script + html;
         }
 
-        function getStateStorageKey() {
-            var owner = (currentUserCustom || 'guest').toLowerCase();
-            return STATE_KEY_BASE + '::' + encodeURIComponent(owner);
+        function safeStorageGet(key, fallback) {
+            try {
+                var value = localStorage.getItem(key);
+                return value === null ? fallback : value;
+            } catch(e) {
+                console.warn('Storage read unavailable:', key, e);
+                return fallback;
+            }
         }
 
-        function saveLocalState() { 
+        function safeStorageSet(key, value) {
+            try { localStorage.setItem(key, value); return true; }
+            catch(e) { console.warn('Storage write unavailable:', key, e); return false; }
+        }
+
+        function safeStorageRemove(key) {
+            try { localStorage.removeItem(key); return true; }
+            catch(e) { console.warn('Storage remove unavailable:', key, e); return false; }
+        }
+
+        function getStorageOwnerScope() {
+            if(isLocalSession) return LOCAL_DEVICE_SCOPE;
+            var verified = getVerifiedFirebaseUser();
+            if(verified && verified.uid) return 'firebase:' + verified.uid;
+            if(verified && verified.email) return 'firebase-email:' + verified.email.toLowerCase();
+            return 'guest';
+        }
+
+        function getStateStorageKey() {
+            return STATE_KEY_BASE + '::' + encodeURIComponent(getStorageOwnerScope());
+        }
+
+        var localSaveTimer = null;
+        var localSavePending = false;
+        var activeStateStorageKey = '';
+        var lastPersistenceErrorAt = 0;
+
+        function persistStateNow(storageKey) {
+            var scopedKey = storageKey || activeStateStorageKey || getStateStorageKey();
+            var snapshot = appState;
             if(typeof localforage !== 'undefined') {
-                localforage.setItem(getStateStorageKey(), appState).catch(function(err) {
-                    console.error("Error en IndexedDB:", err);
+                return localforage.setItem(scopedKey, snapshot).catch(function(err) {
+                    console.error('IndexedDB persistence failed:', err);
+                    var ok = safeStorageSet(scopedKey, JSON.stringify(snapshot));
+                    if(!ok) throw err;
                 });
             }
+            var stored = safeStorageSet(scopedKey, JSON.stringify(snapshot));
+            return stored ? Promise.resolve() : Promise.reject(new Error('Persistencia local no disponible'));
+        }
+
+        function flushLocalState() {
+            if(localSaveTimer) { clearTimeout(localSaveTimer); localSaveTimer = null; }
+            if(!localSavePending) return Promise.resolve();
+            localSavePending = false;
+            var keyToFlush = activeStateStorageKey || getStateStorageKey();
+            return persistStateNow(keyToFlush).catch(function(err) {
+                var now = Date.now();
+                if(now - lastPersistenceErrorAt > 5000) {
+                    lastPersistenceErrorAt = now;
+                    showToast('⚠️ No se pudo guardar localmente. Exporta tu proyecto antes de cerrar.');
+                }
+                console.error('Local persistence failed:', err);
+                throw err;
+            });
+        }
+
+        function saveLocalState(options) {
+            options = options || {};
+            localSavePending = true;
+            if(options.immediate) return flushLocalState();
+            if(localSaveTimer) clearTimeout(localSaveTimer);
+            localSaveTimer = setTimeout(function() { flushLocalState().catch(function(){}); }, LOCAL_SAVE_DEBOUNCE_MS);
+            return Promise.resolve();
         }
 
         function escapeRegExp(string) {
@@ -2068,25 +2134,24 @@
                 var firebaseConfig = {
                     apiKey: "AIzaSyDyyWwKKx1bgwObtFlZIgbPXUyQp3gKeKI",
                     authDomain: "visualcodepersonal.firebaseapp.com",
-                    projectId: "visualcodepersonal",
-                    storageBucket: "visualcodepersonal.firebasestorage.app"
+                    projectId: "visualcodepersonal"
                 };
                 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
             }
         } catch(e) { console.warn("Firebase offline:", e); }
         
-        var currentUserCustom = localStorage.getItem('slapy_logged_user') || localStorage.getItem('cs_logged_user') || ""; 
-        var currentDisplayName = localStorage.getItem('slapy_display_name') || localStorage.getItem('cs_display_name') || currentUserCustom;
-        var isLocalSession = localStorage.getItem('slapy_local_session') === '1'; 
+        var currentUserCustom = safeStorageGet('slapy_logged_user', '') || safeStorageGet('cs_logged_user', '') || '';
+        var currentDisplayName = safeStorageGet('slapy_display_name', '') || safeStorageGet('cs_display_name', '') || currentUserCustom;
+        var isLocalSession = safeStorageGet('slapy_local_session', '') === '1';
         
         var isSyncing = false; 
         var isSplitMode = false;
-        var globalCommits = {}; 
+        var globalCommits = {}; // metadata only; full snapshots are fetched on demand
         var editorFontSize = 14;
         var debounceHistory;
         var hasSyncedCloud = false; // Guard de lecturas para Firestore
-        var ghConfig = { repo: "The-Slapy/Slapy-Code", branch: "main", token: "" };
+        var ghConfig = { repo: "The-Slapy/Slapy-Code", branch: "main" };
 
         // DICCIONARIO DE COMANDOS POR DEFECTO
         var defaultShortcuts = {
@@ -2100,12 +2165,32 @@
             openCloudModal: { key: 'l', ctrl: false, alt: false, shift: true, desc: 'Gestión Nube' }
         };
 
-        var customShortcuts = safeParseJSON(localStorage.getItem('slapy_shortcuts'), null) || JSON.parse(JSON.stringify(defaultShortcuts));
+        function normalizeShortcuts(raw) {
+            var out = JSON.parse(JSON.stringify(defaultShortcuts));
+            if(!raw || typeof raw !== 'object') return out;
+            Object.keys(out).forEach(function(id) {
+                var src = raw[id];
+                if(!src || typeof src !== 'object') return;
+                if(typeof src.key === 'string' && src.key.trim()) out[id].key = src.key.trim().toLowerCase();
+                if(typeof src.ctrl === 'boolean') out[id].ctrl = src.ctrl;
+                if(typeof src.alt === 'boolean') out[id].alt = src.alt;
+                if(typeof src.shift === 'boolean') out[id].shift = src.shift;
+                if(typeof src.desc === 'string' && src.desc.trim()) out[id].desc = src.desc.trim();
+            });
+            return out;
+        }
+
+        var customShortcuts = normalizeShortcuts(safeParseJSON(safeStorageGet('slapy_shortcuts', ''), null));
         var appState = { portafolios: {}, activePortafolio: null, activeFile: null };
+        var toastTimer = null;
 
         function showToast(msg) {
             var toast = document.getElementById('toast');
-            if(toast) { toast.innerText = msg; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
+            if(!toast) return;
+            toast.innerText = msg;
+            toast.classList.add('show');
+            if(toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(function() { toast.classList.remove('show'); toastTimer = null; }, 3000);
         }
 
         function checkEmptyState() {
@@ -2136,7 +2221,7 @@
                         }
                         
                         var pnl = document.getElementById('editor-search-panel');
-                        if(pnl && pnl.classList.contains('active')) updateSearch(false);
+                        if(pnl && pnl.classList.contains('active')) scheduleSearchRefresh();
                         
                         if (changeObj.origin !== 'setValue' && changeObj.origin !== 'undo' && changeObj.origin !== 'redo') {
                             clearTimeout(debounceHistory);
@@ -2154,7 +2239,8 @@
             }
         } catch(e) { console.error("Error al inicializar CodeMirror:", e); }
 
-        var dmp = new diff_match_patch();
+        var dmp = (typeof diff_match_patch !== 'undefined') ? new diff_match_patch() : null;
+        if(!dmp) console.warn('diff_match_patch no disponible; historial local degradado.');
 
         function getFullCodeAt(historyArr, index) {
             if (!historyArr || historyArr.length === 0) return "";
@@ -2165,6 +2251,7 @@
                 if (historyArr[i].code !== undefined && !historyArr[i].patch) {
                     text = historyArr[i].code;
                 } else if(historyArr[i].patch) {
+                    if(!dmp) return historyArr[i].code !== undefined ? historyArr[i].code : text;
                     var patches = dmp.patch_fromText(historyArr[i].patch);
                     text = dmp.patch_apply(patches, text)[0];
                 }
@@ -2190,6 +2277,7 @@
 
             var lastCode = getFullCodeAt(arr, arr.length - 1);
             if (lastCode !== currentCode) {
+                if(!dmp) { arr.push({ time: new Date().toLocaleTimeString(), desc: desc, code: currentCode }); if(arr.length > 50) arr.shift(); saveLocalState(); return; }
                 var diff = dmp.diff_main(lastCode, currentCode, true);
                 if (diff.length > 2) dmp.diff_cleanupSemantic(diff);
                 
@@ -2217,74 +2305,90 @@
             var cmElements = document.getElementsByClassName('CodeMirror');
             for(var i=0; i<cmElements.length; i++) cmElements[i].style.fontSize = editorFontSize + 'px';
             if(editor) editor.refresh();
-            localStorage.setItem('slapy_fontsize', editorFontSize);
+            safeStorageSet('slapy_fontsize', String(editorFontSize));
         }
-        if(localStorage.getItem('slapy_fontsize')) {
-            editorFontSize = parseInt(localStorage.getItem('slapy_fontsize')); changeFontSize(0);
+        var storedFontSize = parseInt(safeStorageGet('slapy_fontsize', ''), 10);
+        if(Number.isFinite(storedFontSize)) { editorFontSize = Math.min(36, Math.max(8, storedFontSize)); changeFontSize(0); }
+
+        var BLOCKED_BINARY_EXTENSIONS = /\.(?:png|jpe?g|gif|webp|bmp|ico|svg|avif|heic|heif|pdf|zip|rar|7z|gz|tar|woff2?|ttf|otf|eot|mp[34]|wav|ogg|webm|mov|avi|exe|dll|bin|docx?|xlsx?|pptx?|wasm|sqlite3?|db|psd|ai)$/i;
+
+        function isAllowedTextFile(fileOrName) {
+            var name = typeof fileOrName === 'string' ? fileOrName : String((fileOrName && fileOrName.name) || '');
+            var type = typeof fileOrName === 'object' && fileOrName ? String(fileOrName.type || '') : '';
+            if(type && (/^image\//i.test(type) || /^(audio|video)\//i.test(type) || /^application\/(?:pdf|zip|octet-stream|x-7z-compressed|x-rar-compressed|wasm|msword)/i.test(type) || /^application\/vnd\./i.test(type))) return false;
+            return !BLOCKED_BINARY_EXTENSIONS.test(name);
+        }
+
+        function hasLegacyImagePayload(files) {
+            if(!files || typeof files !== 'object') return false;
+            return Object.keys(files).some(function(name) {
+                return BLOCKED_BINARY_EXTENSIONS.test(name) || /data:image\//i.test(String(files[name] || ''));
+            });
+        }
+
+        function readTextFile(file) {
+            return new Promise(function(resolve, reject) {
+                if(!isAllowedTextFile(file)) { reject(new Error('Solo se permiten archivos de texto/código: ' + file.name)); return; }
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var text = String(e.target.result == null ? '' : e.target.result);
+                    if(/\u0000/.test(text)) { reject(new Error('Archivo binario no permitido: ' + file.name)); return; }
+                    resolve(text);
+                };
+                reader.onerror = function() { reject(reader.error || new Error('No se pudo leer ' + file.name)); };
+                reader.onabort = function() { reject(new Error('Lectura cancelada: ' + file.name)); };
+                reader.readAsText(file);
+            });
+        }
+
+        function finishTextImport(results, total, label) {
+            var ok = results.filter(function(r) { return r.ok; }).length;
+            var failed = total - ok;
+            if(failed) showToast('⚠️ ' + ok + ' archivo(s) importados; ' + failed + ' rechazados/no legibles. Solo texto/código.');
+            else showToast('✔ ' + label);
         }
 
         function handleFileUpload(event) {
             var pName = appState.activePortafolio;
-            if(!pName) { showToast("Abre o crea un proyecto primero."); return; }
-            var files = event.target.files;
-            if(files.length === 0) return;
-            
-            var filesRead = 0;
-            for(let i=0; i<files.length; i++) {
-                let f = files[i];
-                let reader = new FileReader();
-                reader.onload = function(e) {
+            if(!pName) { showToast('Abre o crea un proyecto primero.'); return; }
+            var files = Array.from(event.target.files || []);
+            event.target.value = '';
+            if(!files.length) return;
+            Promise.all(files.map(function(file) {
+                return readTextFile(file).then(function(content) {
                     if(!appState.portafolios[pName].files) appState.portafolios[pName].files = {};
-                    appState.portafolios[pName].files[f.name] = e.target.result;
-                    filesRead++;
-                    
-                    if(filesRead === files.length) { 
-                        appState.portafolios[pName].isOpen = true;
-                        appState.portafolios[pName].isGhost = false;
-                        saveLocalState(); 
-                        renderExplorer(); 
-                        openFile(pName, f.name); 
-                        showToast("✔ Archivo(s) Subido(s)"); 
-                    }
-                };
-                if(f.type.startsWith('image/')) reader.readAsDataURL(f);
-                else reader.readAsText(f);
-            }
-            event.target.value = ''; 
+                    appState.portafolios[pName].files[file.name] = content;
+                    return {ok:true,name:file.name};
+                }).catch(function(err) { console.warn(err); return {ok:false,name:file.name,error:err}; });
+            })).then(function(results) {
+                var imported = results.filter(function(r){ return r.ok; });
+                if(imported.length) {
+                    appState.portafolios[pName].isOpen = true;
+                    appState.portafolios[pName].isGhost = false;
+                    saveLocalState({immediate:true}); renderExplorer(); openFile(pName, imported[imported.length-1].name);
+                }
+                finishTextImport(results, files.length, 'Archivo(s) de texto agregados');
+            });
         }
 
         function handleFolderUpload(event) {
-            var files = event.target.files;
-            if(files.length === 0) return;
-            var folderName = files[0].webkitRelativePath.split('/')[0] || "Proyecto Importado";
-            
-            for(var p in appState.portafolios) { if(appState.portafolios[p]) appState.portafolios[p].isOpen = false; }
-            if(!appState.portafolios[folderName]) appState.portafolios[folderName] = { isOpen: true, files: {}, openTabs: [], localHistory: {}, splitMap: {}, splitMeta: {}, openSubfolders: {} };
-            else appState.portafolios[folderName].isOpen = true;
-            
-            var filesRead = 0;
-            for(let i=0; i<files.length; i++) {
-                let f = files[i];
-                let relativePath = f.webkitRelativePath.split('/').slice(1).join('/'); // PRESERVA SUBCARPETAS
-                if(!relativePath) relativePath = f.name;
-
-                let reader = new FileReader();
-                reader.onload = function(e) {
-                    if(!appState.portafolios[folderName].files) appState.portafolios[folderName].files = {};
-                    appState.portafolios[folderName].files[relativePath] = e.target.result;
-                    filesRead++;
-                    
-                    if(filesRead === files.length) {
-                        activatePortafolio(folderName);
-                        saveLocalState(); 
-                        renderExplorer(); 
-                        showToast("✔ Carpeta Importada con subcarpetas: " + folderName);
-                    }
-                };
-                if(f.type.startsWith('image/')) reader.readAsDataURL(f);
-                else reader.readAsText(f);
-            }
+            var files = Array.from(event.target.files || []);
             event.target.value = '';
+            if(!files.length) return;
+            var folderName = (files[0].webkitRelativePath || files[0].name).split('/')[0] || 'Proyecto Importado';
+            for(var p in appState.portafolios) if(appState.portafolios[p]) appState.portafolios[p].isOpen = false;
+            if(!appState.portafolios[folderName]) appState.portafolios[folderName] = { isOpen:true, files:{}, openTabs:[], localHistory:{}, splitMap:{}, splitMeta:{}, openSubfolders:{} };
+            else appState.portafolios[folderName].isOpen = true;
+            Promise.all(files.map(function(file) {
+                var relativePath = (file.webkitRelativePath || file.name).split('/').slice(1).join('/') || file.name;
+                return readTextFile(file).then(function(content) {
+                    appState.portafolios[folderName].files[relativePath] = content;
+                    return {ok:true,name:relativePath};
+                }).catch(function(err) { console.warn(err); return {ok:false,name:relativePath,error:err}; });
+            })).then(function(results) {
+                if(results.some(function(r){return r.ok;})) { activatePortafolio(folderName); saveLocalState({immediate:true}); renderExplorer(); }
+                finishTextImport(results, files.length, 'Carpeta de texto importada: ' + folderName);
+            });
         }
 
         var wsArea = document.getElementById('workspace-area');
@@ -2295,38 +2399,22 @@
             wsArea.addEventListener('drop', function(e) {
                 e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('active');
                 var pName = appState.activePortafolio; if(!pName) return;
-                if(e.dataTransfer.items) {
-                    var items = e.dataTransfer.items;
-                    var filesToRead = [];
-                    for(var i=0; i<items.length; i++) {
-                        if(items[i].kind === 'file') filesToRead.push(items[i].getAsFile());
+                var files = Array.from(e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files : []);
+                if(!files.length) return;
+                Promise.all(files.map(function(file) {
+                    return readTextFile(file).then(function(content) {
+                        if(!appState.portafolios[pName].files) appState.portafolios[pName].files = {};
+                        appState.portafolios[pName].files[file.name] = content;
+                        return {ok:true,name:file.name};
+                    }).catch(function(err){ console.warn(err); return {ok:false,name:file.name,error:err}; });
+                })).then(function(results) {
+                    var imported = results.filter(function(r){ return r.ok; });
+                    if(imported.length) {
+                        appState.portafolios[pName].isOpen = true; appState.portafolios[pName].isGhost = false;
+                        saveLocalState({immediate:true}); renderExplorer(); openFile(pName, imported[imported.length-1].name);
                     }
-                    var filesRead = 0;
-                    if(filesToRead.length === 0) return;
-                    
-                    for(var i=0; i<filesToRead.length; i++) {
-                        let file = filesToRead[i];
-                        let reader = new FileReader();
-                        reader.onload = (function(fName) {
-                            return function(evt) {
-                                if(!appState.portafolios[pName].files) appState.portafolios[pName].files = {};
-                                appState.portafolios[pName].files[fName] = evt.target.result;
-                                filesRead++;
-                                
-                                if(filesRead === filesToRead.length) {
-                                    appState.portafolios[pName].isOpen = true;
-                                    appState.portafolios[pName].isGhost = false;
-                                    saveLocalState(); 
-                                    renderExplorer(); 
-                                    openFile(pName, fName);
-                                    showToast("✔ Archivos agregados");
-                                }
-                            }
-                        })(file.name);
-                        if(file.type.startsWith('image/')) reader.readAsDataURL(file);
-                        else reader.readAsText(file);
-                    }
-                }
+                    finishTextImport(results, files.length, 'Archivos de texto agregados');
+                });
             });
         }
 
@@ -2335,7 +2423,11 @@
             var content = (appState.portafolios[pName].files && appState.portafolios[pName].files[fName]) || "";
             var link = document.createElement("a");
             if(content.startsWith('data:image/')) link.href = content;
-            else link.href = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
+            else {
+                var singleUrl = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
+                link.href = singleUrl;
+                setTimeout(function(){ URL.revokeObjectURL(singleUrl); }, 0);
+            }
             link.download = fName; link.click(); showToast("Descargando archivo...");
         }
 
@@ -2349,7 +2441,7 @@
                 else zip.file(f, content);
             }
             zip.generateAsync({type:"blob"}).then(function(content) {
-                var link = document.createElement("a"); link.href = URL.createObjectURL(content); link.download = pName + ".zip"; link.click(); showToast("Descargando proyecto .zip");
+                var link = document.createElement("a"); var zipUrl = URL.createObjectURL(content); link.href = zipUrl; link.download = pName + ".zip"; link.click(); setTimeout(function(){ URL.revokeObjectURL(zipUrl); }, 0); showToast("Descargando proyecto .zip");
             });
         }
 
@@ -2365,7 +2457,7 @@
                 }
             }
             zip.generateAsync({type:"blob"}).then(function(content) {
-                var link = document.createElement("a"); link.href = URL.createObjectURL(content); link.download = "Slapy_Backup.zip"; link.click(); showToast("Backup completo descargado");
+                var link = document.createElement("a"); var backupUrl = URL.createObjectURL(content); link.href = backupUrl; link.download = "Slapy_Backup.zip"; link.click(); setTimeout(function(){ URL.revokeObjectURL(backupUrl); }, 0); showToast("Backup completo descargado");
             });
         }
 
@@ -2586,7 +2678,8 @@
             var fName = prompt(msg);
             if(fName && fName.trim() !== "") {
                 fName = fName.trim();
-                if(folderPrefix) fName = folderPrefix + "/" + fName;
+                if(folderPrefix) fName = folderPrefix + '/' + fName;
+                if(!isAllowedTextFile(fName)) { showToast('❌ Slapy 1.3.1.0 admite sólo archivos de texto/código.'); return; }
                 if(!pData.files) pData.files = {};
                 if(pData.files[fName] !== undefined) return;
                 
@@ -2778,47 +2871,48 @@
             else { saveLocalState(); renderExplorer(); }
         }
 
-        function renamePortafolio(oldName, e) {
-            e.stopPropagation();
-            var newName = prompt("Renombrar proyecto:", oldName);
-            if(!newName || newName.trim() === "" || newName === oldName || appState.portafolios[newName]) return;
-            newName = newName.trim();
-
+        function applyLocalProjectRename(oldName, newName) {
             appState.portafolios[newName] = appState.portafolios[oldName];
             delete appState.portafolios[oldName];
             if(appState.activePortafolio === oldName) appState.activePortafolio = newName;
+            saveLocalState({immediate:true}); renderExplorer();
+            showToast('✔ Proyecto renombrado a: ' + newName);
+        }
 
-            // Renombra también en Firestore conservando la subcolección de commits.
-            if(canUseCloud()) {
-                var oldDocRef = db.collection("proyectos").doc(oldName);
-                var newDocRef = db.collection("proyectos").doc(newName);
-                Promise.all([oldDocRef.get(), newDocRef.get()]).then(function(docs) {
-                    var oldDoc = docs[0], newDoc = docs[1];
-                    if(!oldDoc.exists || oldDoc.data().usuario !== currentUserCustom) return;
-                    if(newDoc.exists && newDoc.data().usuario && newDoc.data().usuario !== currentUserCustom) {
-                        throw new Error("El nuevo nombre ya está ocupado en la nube por otra cuenta.");
-                    }
-                    var data = oldDoc.data();
-                    data.nombre = newName;
-                    return oldDocRef.collection("commits").get().then(function(commitSnap) {
-                        return newDocRef.set(data).then(function() {
-                            return Promise.all(commitSnap.docs.map(function(commitDoc) {
-                                return newDocRef.collection("commits").doc(commitDoc.id).set(commitDoc.data());
-                            }));
-                        }).then(function() {
-                            return Promise.all(commitSnap.docs.map(function(commitDoc) { return commitDoc.ref.delete(); }));
-                        }).then(function() {
-                            return oldDocRef.delete();
-                        });
+        function renamePortafolio(oldName, e) {
+            if(e) e.stopPropagation();
+            var newName = prompt('Renombrar proyecto:', oldName);
+            if(!newName || newName.trim() === '' || newName === oldName) return;
+            newName = newName.trim();
+            if(appState.portafolios[newName]) { showToast('❌ Ya existe un proyecto local con ese nombre.'); return; }
+            if(!canUseCloud()) { applyLocalProjectRename(oldName, newName); return; }
+
+            var oldDocRef = db.collection('proyectos').doc(oldName);
+            var newDocRef = db.collection('proyectos').doc(newName);
+            Promise.all([oldDocRef.get(), newDocRef.get()]).then(function(docs) {
+                var oldDoc=docs[0], newDoc=docs[1];
+                if(!oldDoc.exists) { applyLocalProjectRename(oldName,newName); return null; }
+                if(oldDoc.data().usuario !== currentUserCustom) throw new Error('El proyecto cloud no pertenece a la sesión actual.');
+                if(newDoc.exists) throw new Error('El nuevo nombre ya existe en la nube.');
+                var data=Object.assign({},oldDoc.data(),{nombre:newName});
+                return oldDocRef.collection('commits').get().then(function(commitSnap) {
+                    return newDocRef.set(data).then(function() {
+                        return Promise.all(commitSnap.docs.map(function(commitDoc){ return newDocRef.collection('commits').doc(commitDoc.id).set(commitDoc.data()); }));
+                    }).then(function(){ return oldDocRef.delete(); })
+                    .then(function(){
+                        applyLocalProjectRename(oldName,newName);
+                        Promise.all(commitSnap.docs.map(function(commitDoc){ return commitDoc.ref.delete(); })).catch(function(cleanErr){ console.warn('Limpieza de historial antiguo incompleta:', cleanErr); });
+                    })
+                    .catch(function(err) {
+                        return newDocRef.collection('commits').get().then(function(partial) {
+                            return Promise.all(partial.docs.map(function(doc){ return doc.ref.delete(); }));
+                        }).then(function(){ return newDocRef.delete(); }).catch(function(){}).then(function(){ throw err; });
                     });
-                }).catch(function(err){
-                    console.error("Error al renombrar en la nube:", err);
-                    showToast("⚠️ Renombrado local; la nube no pudo renombrarse: " + err.message);
                 });
-            }
-
-            saveLocalState(); renderExplorer();
-            showToast("✔ Proyecto renombrado a: " + newName);
+            }).catch(function(err) {
+                console.error('Error al renombrar en la nube:',err);
+                showToast('❌ Renombrado cancelado; el proyecto local conserva su nombre. ' + err.message);
+            });
         }
 
         function renameFile(pName, oldName, e) {
@@ -3625,20 +3719,28 @@
         }
         syncMobileDisplayMode();
 
-        function syncMobileViewport() {
+        var mobileViewportRaf = 0;
+        var lastMobileViewportCss = {h:'',top:'',bottom:''};
+        function syncMobileViewportNow() {
             var vv = window.visualViewport;
             var h = vv ? vv.height : window.innerHeight;
-            var top = vv ? Math.max(0, vv.offsetTop || 0) : 0;
-            var bottom = vv ? Math.max(0, window.innerHeight - vv.height - top) : 0;
-            document.documentElement.style.setProperty('--slapy-visible-vh', Math.max(320, Math.round(h)) + 'px');
-            document.documentElement.style.setProperty('--slapy-vv-top', Math.round(top) + 'px');
-            document.documentElement.style.setProperty('--slapy-vv-bottom', Math.round(bottom) + 'px');
+            var top = vv ? vv.offsetTop : 0;
+            var bottom = Math.max(0, window.innerHeight - (top + h));
+            var values = { h: Math.max(1, Math.round(h)) + 'px', top: Math.max(0, Math.round(top)) + 'px', bottom: Math.max(0, Math.round(bottom)) + 'px' };
+            var root = document.documentElement;
+            if(values.h !== lastMobileViewportCss.h) { root.style.setProperty('--slapy-visible-vh', values.h); lastMobileViewportCss.h=values.h; }
+            if(values.top !== lastMobileViewportCss.top) { root.style.setProperty('--slapy-vv-top', values.top); lastMobileViewportCss.top=values.top; }
+            if(values.bottom !== lastMobileViewportCss.bottom) { root.style.setProperty('--slapy-vv-bottom', values.bottom); lastMobileViewportCss.bottom=values.bottom; }
+        }
+        function syncMobileViewport() {
+            if(mobileViewportRaf) return;
+            mobileViewportRaf = requestAnimationFrame(function(){ mobileViewportRaf=0; syncMobileViewportNow(); });
         }
         syncMobileViewport();
-        window.addEventListener('resize', syncMobileViewport, { passive: true });
+        window.addEventListener('resize', syncMobileViewport, {passive:true});
         if(window.visualViewport) {
-            window.visualViewport.addEventListener('resize', syncMobileViewport, { passive: true });
-            window.visualViewport.addEventListener('scroll', syncMobileViewport, { passive: true });
+            window.visualViewport.addEventListener('resize', syncMobileViewport, {passive:true});
+            window.visualViewport.addEventListener('scroll', syncMobileViewport, {passive:true});
         }
         document.body.setAttribute('data-mobile-surface', 'code');
         window.addEventListener('resize', function() {
@@ -3749,30 +3851,50 @@
             }
         });
 
+        function projectCloudPayload(pData) {
+            return {
+                files: (pData && pData.files) || {},
+                splitMap: (pData && pData.splitMap) || {},
+                splitMeta: (pData && pData.splitMeta) || {},
+                isFavorite: !!(pData && pData.isFavorite)
+            };
+        }
+
+        function projectPayloadString(pData) { return JSON.stringify(projectCloudPayload(pData)); }
+        function projectPayloadHash(pData) {
+            var str = projectPayloadString(pData), h = 2166136261;
+            for(var i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+            return (h >>> 0).toString(16).padStart(8,'0') + ':' + str.length;
+        }
+        function markProjectCloudSynced(pData) { if(pData) pData.cloudSyncedHash = projectPayloadHash(pData); }
+        function canSafelyOffload(pData) { return !!(pData && pData.cloudSyncedHash && pData.cloudSyncedHash === projectPayloadHash(pData)); }
+        function utf8ByteLength(str) { try { return new Blob([str]).size; } catch(e) { return unescape(encodeURIComponent(str)).length; } }
+
+        function parseProjectSnapshot(raw) {
+            var parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if(!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Snapshot de proyecto inválido.');
+            var files;
+            if(parsed.files !== undefined) files = parsed.files;
+            else if(parsed.ffiles !== undefined) files = parsed.ffiles;
+            else {
+                files = Object.assign({}, parsed);
+                delete files.splitMap; delete files.splitMeta; delete files.isFavorite; delete files.isGhost; delete files.cloudSyncedHash;
+            }
+            if(!files || typeof files !== 'object' || Array.isArray(files)) throw new Error('El snapshot no contiene un mapa de archivos válido.');
+            Object.keys(files).forEach(function(name){ if(typeof files[name] !== 'string') throw new Error('Contenido no textual en: ' + name); });
+            return { files: files, splitMap: parsed.splitMap && typeof parsed.splitMap === 'object' ? parsed.splitMap : {}, splitMeta: parsed.splitMeta && typeof parsed.splitMeta === 'object' ? parsed.splitMeta : {}, isFavorite: !!parsed.isFavorite };
+        }
+
         function offloadProject(pName, e) {
-            e.stopPropagation();
+            if(e) e.stopPropagation();
             var pData = appState.portafolios[pName];
             if(!pData || pData.isGhost) return;
-            
-            if(confirm("⚠️ ¿Deseas eliminar la descarga local de '" + pName + "'?\n\nEsto liberará espacio en tu navegador. Los archivos volverán a estar vacíos hasta que hagas 'Get' de nuevo.\n\n(Asegúrate de haber hecho 'Push' si tenías cambios recientes).")) {
-                for(var f in pData.files) {
-                    pData.files[f] = "";
-                }
-                
-                pData.isGhost = true;
-                pData.isOpen = false;
-                pData.localHistory = {}; 
-                pData.openTabs = [];
-                
-                if(appState.activePortafolio === pName) {
-                    appState.activeFile = null;
-                    if(editor) editor.setValue("");
-                }
-                
-                saveLocalState();
-                renderExplorer();
-                checkEmptyState();
-                showToast("🧹 Descarga eliminada. Proyecto en Nube.");
+            if(!canSafelyOffload(pData)) { showToast('❌ No se puede liberar: hay cambios locales sin Push verificado.'); return; }
+            if(confirm("¿Eliminar la copia local verificada de '" + pName + "'? Podrás recuperarla con Get.")) {
+                Object.keys(pData.files || {}).forEach(function(f){ pData.files[f] = ''; });
+                pData.isGhost = true; pData.isOpen = false; pData.localHistory = {}; pData.openTabs = [];
+                if(appState.activePortafolio === pName) { appState.activeFile = null; if(editor) editor.setValue(''); }
+                saveLocalState({immediate:true}); renderExplorer(); checkEmptyState(); showToast('🧹 Copia local liberada de forma segura.');
             }
         }
         
@@ -3788,6 +3910,7 @@
                 if(!appState.portafolios[p].splitMeta || typeof appState.portafolios[p].splitMeta !== 'object') appState.portafolios[p].splitMeta = {};
                 if(!appState.portafolios[p].localHistory || typeof appState.portafolios[p].localHistory !== 'object') appState.portafolios[p].localHistory = {};
                 if(!appState.portafolios[p].openSubfolders || typeof appState.portafolios[p].openSubfolders !== 'object') appState.portafolios[p].openSubfolders = {};
+                if(typeof appState.portafolios[p].cloudSyncedHash !== 'string') appState.portafolios[p].cloudSyncedHash = null;
             }
 
             if(Object.keys(appState.portafolios).length === 0) {
@@ -3806,41 +3929,49 @@
         }
 
         function loadLocalState() {
-            if(typeof localforage === 'undefined') {
-                normalizeAppState(null);
+            var scopedKey = getStateStorageKey();
+            activeStateStorageKey = scopedKey;
+            function useSaved(savedData) {
+                if(savedData && typeof savedData === 'object') normalizeAppState(savedData);
+                else normalizeAppState(null);
                 return Promise.resolve();
             }
-
-            var scopedKey = getStateStorageKey();
-            return localforage.getItem(scopedKey).then(function(savedData) {
-                if(savedData && typeof savedData === 'object') {
-                    normalizeAppState(savedData);
-                    return;
+            function eligibleLegacyScopedKey() {
+                var verified = getVerifiedFirebaseUser();
+                if(!isLocalSession && !verified) return null;
+                var legacyOwner = isLocalSession ? String(safeStorageGet('slapy_logged_user', currentUserCustom || '') || '').toLowerCase() : String((verified && verified.email) || currentUserCustom || '').toLowerCase();
+                if(!legacyOwner || legacyOwner === 'local@device') return null;
+                var key = STATE_KEY_BASE + '::' + encodeURIComponent(legacyOwner);
+                return key === scopedKey ? null : key;
+            }
+            function migrateLegacyIfAvailable() {
+                var legacyKey = eligibleLegacyScopedKey();
+                if(!legacyKey) return Promise.resolve(null);
+                if(typeof localforage !== 'undefined') {
+                    return localforage.getItem(legacyKey).then(function(value) { return value && typeof value === 'object' ? value : safeParseJSON(safeStorageGet(legacyKey, ''), null); });
                 }
-
-                // Migra la antigua clave global una sola vez para no copiar datos de un usuario a otro.
-                var migrationOwner = localStorage.getItem('slapy_state_v34_migrated_to');
-                if(!migrationOwner) {
-                    return localforage.getItem(STATE_KEY_BASE).then(function(legacyData) {
-                        if(!legacyData) {
-                            try { legacyData = safeParseJSON(localStorage.getItem(STATE_KEY_BASE), null); } catch(e) {}
-                        }
-                        if(legacyData && typeof legacyData === 'object') {
-                            normalizeAppState(legacyData);
-                            localStorage.setItem('slapy_state_v34_migrated_to', scopedKey);
-                            return localforage.setItem(scopedKey, appState);
-                        }
-                        normalizeAppState(null);
-                        return localforage.setItem(scopedKey, appState);
-                    });
-                }
-
-                normalizeAppState(null);
-                return localforage.setItem(scopedKey, appState);
-            }).catch(function(err) {
-                console.error("Error al arrancar IndexedDB:", err);
-                normalizeAppState(null);
-            });
+                return Promise.resolve(safeParseJSON(safeStorageGet(legacyKey, ''), null));
+            }
+            function resolveMissing() {
+                var fallback = safeParseJSON(safeStorageGet(scopedKey, ''), null);
+                if(fallback && typeof fallback === 'object') return useSaved(fallback).then(function(){ localSavePending=true; return flushLocalState().catch(function(){}); });
+                return migrateLegacyIfAvailable().then(function(legacy) {
+                    if(legacy && typeof legacy === 'object') {
+                        return useSaved(legacy).then(function(){ localSavePending = true; return flushLocalState().catch(function(){}); });
+                    }
+                    return useSaved(null).then(function(){ localSavePending = true; return flushLocalState().catch(function(){}); });
+                });
+            }
+            if(typeof localforage !== 'undefined') {
+                return localforage.getItem(scopedKey).then(function(savedData) {
+                    if(savedData && typeof savedData === 'object') return useSaved(savedData);
+                    return resolveMissing();
+                }).catch(function(err) {
+                    console.error('IndexedDB startup failed:', err);
+                    return resolveMissing();
+                });
+            }
+            return resolveMissing();
         }
         
         function updateAuthUI() {
@@ -3866,10 +3997,9 @@
                             var d = doc.data();
                             if(d.ghRepo) ghConfig.repo = d.ghRepo;
                             if(d.ghBranch) ghConfig.branch = d.ghBranch;
-                            if(d.ghToken) ghConfig.token = d.ghToken;
                             if(d.shortcuts && typeof d.shortcuts === 'object') {
-                                customShortcuts = d.shortcuts;
-                                localStorage.setItem('slapy_shortcuts', JSON.stringify(customShortcuts));
+                                customShortcuts = normalizeShortcuts(d.shortcuts);
+                                safeStorageSet('slapy_shortcuts', JSON.stringify(customShortcuts));
                                 renderShortcutsUI();
                             }
                         }
@@ -3887,6 +4017,28 @@
             renderExplorer();
         }
 
+        function switchUserScope(next) {
+            next = next || {};
+            var nextEmail = String(next.email || '');
+            var nextName = String(next.displayName || (nextEmail ? nextEmail.split('@')[0] : ''));
+            var nextLocal = !!next.isLocal;
+            var identitySame = nextEmail.toLowerCase() === String(currentUserCustom || '').toLowerCase() && nextLocal === isLocalSession;
+            var desiredScope;
+            if(nextLocal) desiredScope = STATE_KEY_BASE + '::' + encodeURIComponent(LOCAL_DEVICE_SCOPE);
+            else {
+                var verified = getVerifiedFirebaseUser();
+                desiredScope = verified && verified.uid ? STATE_KEY_BASE + '::' + encodeURIComponent('firebase:' + verified.uid) : null;
+            }
+            if(identitySame && desiredScope && activeStateStorageKey === desiredScope) { currentDisplayName = nextName || currentDisplayName; updateAuthUI(); return Promise.resolve(); }
+            return flushLocalState().catch(function(){}).then(function() {
+                currentUserCustom = nextEmail; currentDisplayName = nextName; isLocalSession = nextLocal; hasSyncedCloud = false; globalCommits = {};
+                if(nextEmail) { safeStorageSet('slapy_logged_user', nextEmail); safeStorageSet('slapy_display_name', nextName); }
+                else { safeStorageRemove('slapy_logged_user'); safeStorageRemove('slapy_display_name'); }
+                if(nextLocal) safeStorageSet('slapy_local_session','1'); else safeStorageRemove('slapy_local_session');
+                return loadLocalState();
+            }).then(function(){ updateAuthUI(); runCode(); });
+        }
+
         loadLocalState().then(function() {
             updateAuthUI(); 
             setTimeout(runCode, 300);
@@ -3895,24 +4047,10 @@
         if(typeof firebase !== 'undefined' && firebase.auth) {
             firebase.auth().onAuthStateChanged(function(user) {
                 if(user && user.email) {
-                    if(!currentUserCustom || user.email.toLowerCase() !== currentUserCustom.toLowerCase()) {
-                        currentUserCustom = user.email;
-                        currentDisplayName = user.displayName || user.email.split('@')[0];
-                        localStorage.setItem('slapy_logged_user', currentUserCustom);
-                        localStorage.setItem('slapy_display_name', currentDisplayName);
-                    }
-                    isLocalSession = false;
-                    localStorage.removeItem('slapy_local_session');
-                    updateAuthUI();
-                } else if(currentUserCustom && !isLocalSession) {
-                    currentUserCustom = ""; currentDisplayName = "";
-                    ghConfig.token = ""; hasSyncedCloud = false;
-                    localStorage.removeItem('slapy_logged_user');
-                    localStorage.removeItem('slapy_display_name');
-                    loadLocalState().then(function() { updateAuthUI(); runCode(); });
-                } else {
-                    updateAuthUI();
-                }
+                    switchUserScope({ email:user.email, displayName:user.displayName || user.email.split('@')[0], isLocal:false }).catch(function(e){ console.error('User scope switch failed:', e); });
+                } else if(!isLocalSession) {
+                    switchUserScope({ email:'', displayName:'', isLocal:false }).catch(function(e){ console.error('Logout scope switch failed:', e); });
+                } else updateAuthUI();
             });
         }
 
@@ -3948,48 +4086,29 @@
         }
 
         function finishLogin(email, displayName, isLocalFallback) {
-            currentUserCustom = email;
-            currentDisplayName = displayName;
-            isLocalSession = !!isLocalFallback;
-            hasSyncedCloud = false;
-            localStorage.setItem('slapy_logged_user', email);
-            localStorage.setItem('slapy_display_name', displayName);
-            if(isLocalSession) localStorage.setItem('slapy_local_session', '1');
-            else localStorage.removeItem('slapy_local_session');
-            document.getElementById('auth-error').innerText = "";
-
-            closeLoginModal();
-            loadLocalState().then(function() {
-                updateAuthUI();
-                if (isLocalFallback) showToast("Modo Local Activado: " + email + " (sin acceso a Nube)");
-                else {
-                    showToast(authMode === 'login' ? "Sesión iniciada correctamente" : "Cuenta creada exitosamente");
-                    loadProjectsFromCloud();
-                }
-                runCode();
-            });
+            var local = !!isLocalFallback;
+            switchUserScope({ email: local ? ('local@device') : email, displayName: local ? ('Local — ' + (displayName || 'Dispositivo')) : displayName, isLocal: local }).then(function() {
+                var err = document.getElementById('auth-error'); if(err) err.innerText = '';
+                closeLoginModal();
+                if(local) showToast('Modo Local del dispositivo activado (sin Nube).');
+                else { showToast(authMode === 'login' ? 'Sesión iniciada correctamente' : 'Cuenta creada exitosamente'); loadProjectsFromCloud(); }
+            }).catch(function(e){ console.error(e); showToast('No se pudo cambiar el perfil local.'); });
         }
 
         function loginFirebase() {
             var email = document.getElementById('email-input').value.trim();
             var pass = document.getElementById('pass-input').value;
             var err = document.getElementById('auth-error');
-            if(!email || !pass) { err.innerText = "Ingresa tu correo y contraseña."; return; }
-            err.innerText = "Cargando...";
-
+            if(!email || !pass) { err.innerText = 'Ingresa tu correo y contraseña.'; return; }
+            err.innerText = 'Cargando...';
             if(typeof firebase !== 'undefined' && firebase.auth) {
-                firebase.auth().signInWithEmailAndPassword(email, pass)
-                .then(function(cred) {
-                    var disp = cred.user.displayName || email.split('@')[0];
-                    finishLogin(email, disp, false);
-                })
-                .catch(function(e) {
+                firebase.auth().signInWithEmailAndPassword(email, pass).then(function(cred) {
+                    finishLogin(email, cred.user.displayName || email.split('@')[0], false);
+                }).catch(function(e) {
                     if(e.code === 'auth/network-request-failed') finishLogin(email, email.split('@')[0], true);
-                    else err.innerText = "Error: Credenciales incorrectas.";
+                    else err.innerText = 'Error: Credenciales incorrectas.';
                 });
-            } else {
-                finishLogin(email, email.split('@')[0], true);
-            }
+            } else finishLogin(email, email.split('@')[0], true);
         }
 
         function registerFirebase() {
@@ -4016,24 +4135,9 @@
             }
         }
 
-        function logoutCustom() { 
-            if(typeof firebase !== 'undefined' && firebase.auth) {
-                firebase.auth().signOut().catch(function(){});
-            }
-
-            currentUserCustom = ""; currentDisplayName = "";
-            isLocalSession = false;
-            hasSyncedCloud = false;
-            ghConfig.token = "";
-            localStorage.removeItem('slapy_logged_user');
-            localStorage.removeItem('slapy_display_name');
-            localStorage.removeItem('slapy_local_session');
-
-            loadLocalState().then(function() {
-                updateAuthUI();
-                runCode();
-                showToast("Sesión cerrada");
-            });
+        function logoutCustom() {
+            var signout = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().signOut().catch(function(){}) : Promise.resolve();
+            signout.then(function(){ return switchUserScope({email:'',displayName:'',isLocal:false}); }).then(function(){ showToast('Sesión cerrada'); });
         }
 
         function openAccountModal() {
@@ -4051,24 +4155,18 @@
         }
         
         function freeMemory() {
-            if(!confirm("⚠️ ¿Limpiar la memoria de la aplicación?\n\nEsto hará que TODOS tus proyectos inactivos pasen a Modo Fantasma (ahorrando mucho espacio), limpiará la caché de la Máquina del Tiempo y recargará la página.\n\nNo perderás tus datos en la nube ni se cerrará tu sesión.")) return;
-            
-            var keepProject = appState.activePortafolio;
-            for(var pName in appState.portafolios) {
+            if(!confirm('¿Limpiar historial local y liberar únicamente proyectos con Push verificado? Los proyectos con cambios locales se conservarán.')) return;
+            var keepProject = appState.activePortafolio, freed = 0, protectedCount = 0;
+            Object.keys(appState.portafolios || {}).forEach(function(pName) {
                 var pData = appState.portafolios[pName];
-                
-                if(pName !== keepProject && !pData.isGhost) {
-                    for(var f in pData.files) pData.files[f] = "";
-                    pData.isGhost = true;
-                    pData.isOpen = false;
-                    pData.openTabs = [];
-                }
+                if(!pData) return;
                 pData.localHistory = {};
-            }
-            
-            saveLocalState();
-            showToast("🧹 Limpiando RAM y recargando...");
-            setTimeout(function() { window.location.reload(); }, 1000);
+                if(pName !== keepProject && !pData.isGhost) {
+                    if(canSafelyOffload(pData)) { Object.keys(pData.files || {}).forEach(function(f){ pData.files[f]=''; }); pData.isGhost=true; pData.isOpen=false; pData.openTabs=[]; freed++; }
+                    else protectedCount++;
+                }
+            });
+            saveLocalState({immediate:true}).then(function(){ showToast('🧹 Liberados: ' + freed + '. Protegidos por cambios locales: ' + protectedCount + '.'); });
         }
 
         function updateAccount() {
@@ -4087,7 +4185,7 @@
                 
                 Promise.all(promises).then(function() {
                     currentDisplayName = newName;
-                    localStorage.setItem('slapy_display_name', currentDisplayName);
+                    safeStorageSet('slapy_display_name', currentDisplayName);
                     msgEl.innerText = "✔ Actualizado";
                     updateAuthUI();
                     setTimeout(closeAccountModal, 1000);
@@ -4097,7 +4195,7 @@
                 });
             } else {
                 currentDisplayName = newName; 
-                localStorage.setItem('slapy_display_name', currentDisplayName);
+                safeStorageSet('slapy_display_name', currentDisplayName);
                 msgEl.innerText = "✔ Guardado localmente"; 
                 updateAuthUI(); 
                 setTimeout(closeAccountModal, 1000);
@@ -4167,129 +4265,102 @@
         function saveCommit() {
             var pName = appState.activePortafolio;
             var version = document.getElementById('commit-version').value.trim();
-            var title = document.getElementById('commit-title').value.trim(); var desc = document.getElementById('commit-desc').value.trim();
-            if (version === "" || title === "" || desc === "") { alert("Pon versión, título y descripción."); return; }
-            if(!canUseCloud()) { showToast("La Nube requiere una sesión Firebase verificada."); return; }
-            
-            var btn = document.querySelector('#cloud-save-section .btn-primary'); 
-            if(btn) btn.innerText = "Subiendo... ⏳";
-            var jsonArchivos = JSON.stringify({
-                files: appState.portafolios[pName].files, 
-                splitMap: appState.portafolios[pName].splitMap,
-                splitMeta: appState.portafolios[pName].splitMeta,
-                isFavorite: appState.portafolios[pName].isFavorite || false
-            }); 
-            
-            var projectRef = db.collection("proyectos").doc(pName);
-            return projectRef.get().then(function(existingDoc) {
-                if(existingDoc.exists && existingDoc.data().usuario && existingDoc.data().usuario !== currentUserCustom) {
-                    throw new Error("Ya existe en la nube un proyecto con ese nombre perteneciente a otra cuenta. Renombra el proyecto antes de subirlo.");
-                }
-                return projectRef.set({ nombre: pName, usuario: currentUserCustom, archivos_json: jsonArchivos, actualizado: Date.now() });
-            })
-            .then(function() {
-                return projectRef.collection("commits").add({
-                    version: version, titulo: title, descripcion: desc, archivos_json: jsonArchivos, usuario: currentUserCustom, timestamp: Date.now()
+            var title = document.getElementById('commit-title').value.trim();
+            var desc = document.getElementById('commit-desc').value.trim();
+            if(version === '' || title === '' || desc === '') { alert('Pon versión, título y descripción.'); return; }
+            if(!canUseCloud()) { showToast('La Nube requiere una sesión Firebase verificada.'); return; }
+            var pData = appState.portafolios[pName];
+            if(!pData) return;
+            if(hasLegacyImagePayload(pData.files)) { alert('Slapy ahora es texto/código únicamente. Elimina los archivos/imágenes heredados antes de hacer Push.'); return; }
+            var jsonArchivos = projectPayloadString(pData);
+            var payloadBytes = utf8ByteLength(jsonArchivos);
+            if(payloadBytes > MAX_FIRESTORE_PROJECT_BYTES) { alert('Proyecto demasiado grande para Firestore (' + Math.ceil(payloadBytes/1024) + ' KiB). Divide el proyecto o reduce texto antes de subirlo.'); return; }
+            var btn = document.querySelector('#cloud-save-section .btn-primary'); if(btn) btn.innerText = 'Subiendo... ⏳';
+            var projectRef = db.collection('proyectos').doc(pName);
+            var commitRef = projectRef.collection('commits').doc();
+            var now = Date.now();
+            return db.runTransaction(function(tx) {
+                return tx.get(projectRef).then(function(existingDoc) {
+                    if(existingDoc.exists && existingDoc.data().usuario && existingDoc.data().usuario !== currentUserCustom) throw new Error('Ya existe en la nube un proyecto con ese nombre perteneciente a otra cuenta. Renombra el proyecto antes de subirlo.');
+                    tx.set(projectRef, { nombre:pName, usuario:currentUserCustom, archivos_json:jsonArchivos, actualizado:now });
+                    tx.set(commitRef, { version:version, titulo:title, descripcion:desc, archivos_json:jsonArchivos, usuario:currentUserCustom, timestamp:now });
                 });
-            })
-            .then(function() {
-                document.getElementById('commit-version').value = ''; document.getElementById('commit-title').value = ''; document.getElementById('commit-desc').value = '';
-                if(btn) btn.innerText = "☁️ Subir a la Nube";
-                switchCloudTab('history');
-                showToast("Guardado en la Nube con éxito");
-            })
-            .catch(function(e) {
-                if(btn) btn.innerText = "☁️ Subir a la Nube";
-                alert("Error en la nube: " + e.message);
-            });
+            }).then(function() {
+                markProjectCloudSynced(pData);
+                saveLocalState({immediate:true});
+                document.getElementById('commit-version').value=''; document.getElementById('commit-title').value=''; document.getElementById('commit-desc').value='';
+                if(btn) btn.innerText='☁️ Subir a la Nube'; switchCloudTab('history'); showToast('Guardado en la Nube con éxito');
+            }).catch(function(e) { if(btn) btn.innerText='☁️ Subir a la Nube'; alert('Error en la nube: ' + e.message); });
         }
 
-        function loadCloudHistoryUI() {
+        var cloudHistoryCursor = null;
+        var cloudHistoryProject = null;
+        var cloudHistoryLoading = false;
+
+        function renderCloudCommitCard(container, pName, doc) {
+            var data = doc.data();
+            var commitId = doc.id;
+            globalCommits[commitId] = { id: commitId };
+            var d = new Date(data.timestamp || 0); var min = d.getMinutes(); if(min < 10) min = '0' + min;
+            var dateStr = isNaN(d.getTime()) ? 'Fecha desconocida' : d.toLocaleDateString() + ' ' + d.getHours() + ':' + min;
+            var version = data.version || (/^v?\d+(?:\.\d+)+$/i.test(data.titulo || '') ? data.titulo : '') || 'Sin versión';
+            var commitTitle = data.titulo || 'Sin título';
+            var commitDesc = data.descripcion || 'Sin descripción';
+            var card = document.createElement('div'); card.className = 'commit-card';
+            var header = document.createElement('div'); header.className = 'commit-header';
+            var dateSpan = document.createElement('span'); dateSpan.textContent = dateStr;
+            var userSpan = document.createElement('span'); userSpan.textContent = data.usuario || '';
+            header.appendChild(dateSpan); header.appendChild(userSpan);
+            var summary = document.createElement('div'); summary.className = 'commit-summary';
+            var versionEl = document.createElement('span'); versionEl.className = 'commit-version'; versionEl.textContent = version;
+            var titleEl = document.createElement('div'); titleEl.className = 'commit-title'; titleEl.textContent = commitTitle;
+            var expandBtn = document.createElement('button'); expandBtn.className = 'btn commit-expand'; expandBtn.type = 'button'; expandBtn.textContent = '+'; expandBtn.setAttribute('aria-label','Mostrar descripción');
+            expandBtn.onclick = function(){ var expanded=card.classList.toggle('expanded'); expandBtn.textContent=expanded?'−':'+'; expandBtn.setAttribute('aria-label',expanded?'Ocultar descripción':'Mostrar descripción'); };
+            summary.appendChild(versionEl); summary.appendChild(titleEl); summary.appendChild(expandBtn);
+            var details = document.createElement('div'); details.className = 'commit-details';
+            var descEl = document.createElement('div'); descEl.className = 'commit-desc'; descEl.textContent = commitDesc; details.appendChild(descEl);
+            var btn = document.createElement('button'); btn.className = 'btn-primary'; btn.type = 'button'; btn.innerText = 'Restaurar Copia'; btn.onclick = function(){ restoreCommitCloud(pName, commitId); };
+            details.appendChild(btn); card.appendChild(header); card.appendChild(summary); card.appendChild(details); container.appendChild(card);
+        }
+
+        function loadCloudHistoryUI(append) {
             var pName = appState.activePortafolio;
             var container = document.getElementById('history-list-container');
-            if(!container) return;
-            container.textContent = "";
-
-            var loading = document.createElement('div');
-            loading.className = 'empty-text';
-            loading.textContent = "Cargando historial de la nube...";
-            container.appendChild(loading);
-
-            if(!canUseCloud()) {
-                loading.textContent = "Historial en Nube no disponible sin una sesión verificada.";
-                return;
-            }
-
-            db.collection("proyectos").doc(pName).collection("commits").orderBy("timestamp", "desc").get().then(function(querySnapshot) {
-                container.textContent = "";
-                if (querySnapshot.empty) {
-                    var empty = document.createElement('div'); empty.className = 'empty-text'; empty.textContent = 'Sin commits en la nube.'; container.appendChild(empty); return;
+            if(!container || cloudHistoryLoading) return;
+            if(!canUseCloud()) { container.textContent=''; var unavailable=document.createElement('div'); unavailable.className='empty-text'; unavailable.textContent='Historial en Nube no disponible sin una sesión verificada.'; container.appendChild(unavailable); return; }
+            if(!append || cloudHistoryProject !== pName) { container.textContent=''; cloudHistoryCursor=null; cloudHistoryProject=pName; globalCommits={}; }
+            var oldMore = container.querySelector('.cloud-history-more'); if(oldMore) oldMore.remove();
+            var loading=document.createElement('div'); loading.className='empty-text cloud-history-loading'; loading.textContent='Cargando historial de la nube...'; container.appendChild(loading);
+            cloudHistoryLoading=true;
+            var query=db.collection('proyectos').doc(pName).collection('commits').orderBy('timestamp','desc').limit(30);
+            if(append && cloudHistoryCursor) query=query.startAfter(cloudHistoryCursor);
+            query.get().then(function(querySnapshot) {
+                loading.remove();
+                if(querySnapshot.empty && !append) { var empty=document.createElement('div'); empty.className='empty-text'; empty.textContent='Sin commits en la nube.'; container.appendChild(empty); return; }
+                querySnapshot.forEach(function(doc){ renderCloudCommitCard(container,pName,doc); });
+                if(querySnapshot.docs.length) cloudHistoryCursor=querySnapshot.docs[querySnapshot.docs.length-1];
+                if(querySnapshot.size === 30) {
+                    var more=document.createElement('button'); more.type='button'; more.className='btn cloud-history-more'; more.textContent='Cargar 30 anteriores'; more.onclick=function(){ loadCloudHistoryUI(true); }; container.appendChild(more);
                 }
-                globalCommits = {}; 
-                
-                querySnapshot.forEach(function(doc) {
-                    var data = doc.data(); var commitId = doc.id; globalCommits[commitId] = data.archivos_json; 
-                    var d = new Date(data.timestamp); var m = d.getMinutes(); if(m < 10) m = "0" + m;
-                    var dateStr = d.toLocaleDateString() + " " + d.getHours() + ":" + m;
-                    
-                    var snapshot = data.archivos_json || '';
-                    var snapshotVersion = snapshot.match(/\[SLAPY-VERSION:\s*(.*?)(?:\]|\-\->)/i) || snapshot.match(/\[CS-VERSION:\s*(.*?)(?:\]|\-\->)/i);
-                    var snapshotTitle = snapshot.match(/\[SLAPY-TITLE:\s*([\s\S]*?)(?:\]|\-\->)/i);
-                    var snapshotDesc = snapshot.match(/\[SLAPY-DESC:\s*([\s\S]*?)(?:\]|\-\->)/i) || snapshot.match(/\[CS-DESC:\s*([\s\S]*?)(?:\]|\-\->)/i);
-                    var version = data.version || (/^v?\d+(?:\.\d+)+$/i.test(data.titulo || '') ? data.titulo : '') || (snapshotVersion ? snapshotVersion[1].trim() : 'Sin versión');
-                    var commitTitle = data.version ? (data.titulo || 'Sin título') : (snapshotTitle ? snapshotTitle[1].trim() : 'Sin título');
-                    var commitDesc = data.descripcion || (snapshotDesc ? snapshotDesc[1].trim() : 'Sin descripción');
-
-                    var card = document.createElement("div"); card.className = "commit-card";
-                    var header = document.createElement('div'); header.className = 'commit-header';
-                    var dateSpan = document.createElement('span'); dateSpan.textContent = dateStr;
-                    var userSpan = document.createElement('span'); userSpan.textContent = data.usuario || '';
-                    header.appendChild(dateSpan); header.appendChild(userSpan);
-                    var summary = document.createElement('div'); summary.className = 'commit-summary';
-                    var versionEl = document.createElement('span'); versionEl.className = 'commit-version'; versionEl.textContent = version;
-                    var titleEl = document.createElement('div'); titleEl.className = 'commit-title'; titleEl.textContent = commitTitle;
-                    var expandBtn = document.createElement('button'); expandBtn.className = 'btn commit-expand'; expandBtn.type = 'button'; expandBtn.textContent = '+'; expandBtn.setAttribute('aria-label', 'Mostrar descripción');
-                    expandBtn.onclick = (function(targetCard, targetButton) { return function() { var expanded = targetCard.classList.toggle('expanded'); targetButton.textContent = expanded ? '−' : '+'; targetButton.setAttribute('aria-label', expanded ? 'Ocultar descripción' : 'Mostrar descripción'); }; })(card, expandBtn);
-                    summary.appendChild(versionEl); summary.appendChild(titleEl); summary.appendChild(expandBtn);
-                    var details = document.createElement('div'); details.className = 'commit-details';
-                    var descEl = document.createElement('div'); descEl.className = 'commit-desc'; descEl.textContent = commitDesc;
-                    details.appendChild(descEl);
-                    card.appendChild(header); card.appendChild(summary); card.appendChild(details);
-
-                    var btn = document.createElement("button"); btn.className = "btn-primary"; btn.innerText = "Restaurar Copia";
-                    btn.onclick = (function(cId) { return function() { restoreCommitCloud(pName, cId); }; })(commitId);
-                    details.appendChild(btn); container.appendChild(card);
-                });
             }).catch(function(e) {
-                container.textContent = "";
-                var err = document.createElement('div'); err.className = 'empty-text'; err.textContent = 'Modo sin conexión.'; container.appendChild(err);
-            });
+                loading.remove(); console.error('Cloud history failed:',e); var err=document.createElement('div'); err.className='empty-text'; err.textContent='No se pudo cargar el historial. Reintenta.'; container.appendChild(err);
+            }).finally(function(){ cloudHistoryLoading=false; });
         }
 
         function restoreCommitCloud(pName, commitId) {
-            if(confirm("¿Restaurar proyecto desde la nube?\nSe perderán los cambios locales no guardados.")) {
-                try {
-                    var jsonSeguro = globalCommits[commitId];
-                    var parsedData = JSON.parse(jsonSeguro);
-                    
-                    var filesToRestore;
-                    if(parsedData.files !== undefined) filesToRestore = parsedData.files;
-                    else if(parsedData.ffiles !== undefined) filesToRestore = parsedData.ffiles;
-                    else {
-                        filesToRestore = Object.assign({}, parsedData);
-                        delete filesToRestore.splitMap; delete filesToRestore.splitMeta; delete filesToRestore.isFavorite; delete filesToRestore.isGhost;
-                    }
-                    
-                    appState.portafolios[pName].files = filesToRestore;
-                    appState.portafolios[pName].splitMap = parsedData.splitMap || {};
-                    appState.portafolios[pName].splitMeta = parsedData.splitMeta || {};
-                    appState.portafolios[pName].isFavorite = parsedData.isFavorite || false;
-                    appState.portafolios[pName].openTabs = Object.keys(appState.portafolios[pName].files); 
-                    saveLocalState(); renderExplorer(); 
-                    if(appState.portafolios[pName].openTabs.length > 0) openFile(pName, appState.portafolios[pName].openTabs[0]);
-                    runCode(); closeCloudModal(); showToast("Proyecto Restaurado de la Nube");
-                } catch(e) {}
-            }
+            if(!confirm('¿Restaurar proyecto desde la nube?\nSe perderán los cambios locales no guardados.')) return;
+            if(!canUseCloud()) { showToast('La Nube requiere una sesión verificada.'); return; }
+            db.collection('proyectos').doc(pName).collection('commits').doc(commitId).get().then(function(doc) {
+                if(!doc.exists) throw new Error('Commit no encontrado.');
+                var data = doc.data();
+                if(data.usuario && data.usuario !== currentUserCustom) throw new Error('Commit no autorizado para esta cuenta.');
+                var parsed = parseProjectSnapshot(data.archivos_json);
+                var pData = appState.portafolios[pName] || {isOpen:true,openTabs:[],localHistory:{}};
+                pData.files = parsed.files; pData.splitMap = parsed.splitMap; pData.splitMeta = parsed.splitMeta; pData.isFavorite = parsed.isFavorite; pData.isGhost = false;
+                pData.openTabs = Object.keys(pData.files); appState.portafolios[pName] = pData; markProjectCloudSynced(pData);
+                return saveLocalState({immediate:true});
+            }).then(function(){ renderExplorer(); var pData=appState.portafolios[pName]; if(pData.openTabs.length) openFile(pName,pData.openTabs[0]); runCode(); closeCloudModal(); showToast('Proyecto restaurado de la Nube'); })
+            .catch(function(e){ console.error(e); showToast('Error al restaurar: ' + e.message); });
         }
 
         function pushProject(pName, e) {
@@ -4328,33 +4399,13 @@
                 db.collection("proyectos").doc(pName).get().then(function(doc) {
                     btn.innerHTML = originalHTML;
                     if(doc.exists && doc.data().usuario === currentUserCustom) {
-                        var parsedData = JSON.parse(doc.data().archivos_json);
-                        
-                        if(!appState.portafolios[pName]) {
-                            appState.portafolios[pName] = { isOpen: true, openTabs: [], localHistory: {} };
-                        }
+                        var parsedData = parseProjectSnapshot(doc.data().archivos_json);
+                        if(!appState.portafolios[pName]) appState.portafolios[pName] = { isOpen:true, openTabs:[], localHistory:{} };
                         var pData = appState.portafolios[pName];
-                        
-                        if(parsedData.files !== undefined) {
-                            pData.files = parsedData.files;
-                        } else if(parsedData.ffiles !== undefined) {
-                            pData.files = parsedData.ffiles;
-                        } else {
-                            pData.files = parsedData;
-                            delete pData.files.splitMap; delete pData.files.splitMeta; delete pData.files.isFavorite; delete pData.files.isGhost;
-                        }
-                        pData.splitMap = parsedData.splitMap || {};
-                        pData.splitMeta = parsedData.splitMeta || {};
-                        pData.isFavorite = parsedData.isFavorite || false;
-                        pData.isGhost = false;
-                        
-                        pData.openTabs = Object.keys(pData.files); 
-                        saveLocalState();
-                        renderExplorer();
-                        
-                        if(pData.openTabs.length > 0) {
-                            openFile(pName, pData.openTabs[0]);
-                        }
+                        pData.files = parsedData.files; pData.splitMap = parsedData.splitMap; pData.splitMeta = parsedData.splitMeta; pData.isFavorite = parsedData.isFavorite; pData.isGhost = false;
+                        pData.openTabs = Object.keys(pData.files); markProjectCloudSynced(pData);
+                        saveLocalState({immediate:true}); renderExplorer();
+                        if(pData.openTabs.length > 0) openFile(pName, pData.openTabs[0]);
                         showToast("⬇️ Get exitoso: " + pName);
                     } else {
                         showToast("No se encontró en la nube.");
@@ -4375,53 +4426,21 @@
 
         function loadProjectsFromCloud() {
             if(!canUseCloud() || hasSyncedCloud) return;
-            hasSyncedCloud = true;
-            
-            db.collection("proyectos").where("usuario", "==", currentUserCustom).get().then(function(snap) {
-                var loadedCount = 0;
-                
+            db.collection('proyectos').where('usuario','==',currentUserCustom).get().then(function(snap) {
+                var loadedCount=0;
                 snap.forEach(function(doc) {
-                    var pName = doc.id;
-                    
-                    if(appState.portafolios[pName] && !appState.portafolios[pName].isGhost) {
-                        return; 
-                    }
-                    
-                    try { 
-                        var parsedData = JSON.parse(doc.data().archivos_json); 
-                        
-                        var filesObj;
-                        if(parsedData.files !== undefined) filesObj = parsedData.files;
-                        else if(parsedData.ffiles !== undefined) filesObj = parsedData.ffiles;
-                        else {
-                            filesObj = Object.assign({}, parsedData);
-                            delete filesObj.splitMap; delete filesObj.splitMeta; delete filesObj.isFavorite; delete filesObj.isGhost;
-                        }
-                        
-                        var emptyFiles = {};
-                        for(var f in filesObj) emptyFiles[f] = "";
-                        
-                        appState.portafolios[pName] = { 
-                            isOpen: false, 
-                            openTabs: [], 
-                            files: emptyFiles, 
-                            localHistory: {}, 
-                            splitMap: parsedData.splitMap || {}, 
-                            splitMeta: parsedData.splitMeta || {},
-                            isFavorite: parsedData.isFavorite || false,
-                            isGhost: true
-                        };
+                    var pName=doc.id;
+                    if(appState.portafolios[pName] && !appState.portafolios[pName].isGhost) return;
+                    try {
+                        var parsed=parseProjectSnapshot(doc.data().archivos_json);
+                        var emptyFiles={}; Object.keys(parsed.files).forEach(function(f){ emptyFiles[f]=''; });
+                        appState.portafolios[pName]={ isOpen:false, openTabs:[], files:emptyFiles, localHistory:{}, splitMap:parsed.splitMap, splitMeta:parsed.splitMeta, isFavorite:parsed.isFavorite, isGhost:true, cloudSyncedHash:null };
                         loadedCount++;
-                    } catch(e) {}
+                    } catch(e) { console.warn('Proyecto cloud inválido:', pName, e); }
                 });
-                
-                if(loadedCount > 0) {
-                    showToast("☁️ " + loadedCount + " proyectos en nube (Listos para Get)");
-                    saveLocalState(); renderExplorer(); checkEmptyState();
-                } else {
-                    showToast("Sincronización de lista completada.");
-                }
-            }).catch(function(e) { console.log("Uso en modo local activado"); });
+                hasSyncedCloud=true; renderExplorer(); saveLocalState();
+                if(loadedCount) showToast('☁️ ' + loadedCount + ' proyecto(s) disponibles en la nube.');
+            }).catch(function(err) { hasSyncedCloud=false; console.error('Cloud sync failed:',err); showToast('No se pudo sincronizar la nube. Puedes reintentar.'); });
         }
 
         function openLocalHistoryModal() {
@@ -4491,40 +4510,29 @@
             container.innerHTML = html;
         }
 
+        var activeShortcutCapture = null;
+
         function captureShortcut(id, btnEl) {
-            btnEl.innerText = "Presiona combinación...";
-            btnEl.style.borderColor = "var(--accent)";
-
+            if(activeShortcutCapture) { window.removeEventListener('keydown', activeShortcutCapture, true); activeShortcutCapture=null; renderShortcutsUI(); }
+            btnEl.innerText='Presiona combinación…'; btnEl.style.borderColor='var(--accent)';
             function handler(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                var key = e.key.toLowerCase();
-                if (["control", "shift", "alt", "meta"].includes(key)) return;
-
-                customShortcuts[id].key = key;
-                customShortcuts[id].ctrl = e.ctrlKey || e.metaKey;
-                customShortcuts[id].alt = e.altKey;
-                customShortcuts[id].shift = e.shiftKey;
-
-                localStorage.setItem('slapy_shortcuts', JSON.stringify(customShortcuts));
-
-                if(canUseCloud()) {
-                    db.collection("usuarios").doc(currentUserCustom).set({ shortcuts: customShortcuts }, { merge: true });
-                }
-
-                window.removeEventListener('keydown', handler, true);
-                renderShortcutsUI();
-                showToast("✔ Comando actualizado: " + customShortcuts[id].desc);
+                e.preventDefault(); e.stopPropagation();
+                var key=String(e.key||'').toLowerCase();
+                if(key==='escape') { window.removeEventListener('keydown',handler,true); activeShortcutCapture=null; renderShortcutsUI(); return; }
+                if(['control','shift','alt','meta'].includes(key)) return;
+                if(!customShortcuts[id]) return;
+                customShortcuts[id].key=key; customShortcuts[id].ctrl=e.ctrlKey||e.metaKey; customShortcuts[id].alt=e.altKey; customShortcuts[id].shift=e.shiftKey;
+                safeStorageSet('slapy_shortcuts', JSON.stringify(customShortcuts));
+                if(canUseCloud()) db.collection('usuarios').doc(currentUserCustom).set({shortcuts:customShortcuts},{merge:true}).catch(function(err){console.warn(err);});
+                window.removeEventListener('keydown',handler,true); activeShortcutCapture=null; renderShortcutsUI(); showToast('✔ Comando actualizado: '+customShortcuts[id].desc);
             }
-
-            window.addEventListener('keydown', handler, true);
+            activeShortcutCapture=handler; window.addEventListener('keydown',handler,true);
         }
 
         function resetShortcuts() {
             if(confirm("¿Restablecer todos los comandos a sus valores originales?")) {
                 customShortcuts = JSON.parse(JSON.stringify(defaultShortcuts));
-                localStorage.removeItem('slapy_shortcuts');
+                safeStorageRemove('slapy_shortcuts');
 
                 if(canUseCloud()) {
                     db.collection("usuarios").doc(currentUserCustom).set({ shortcuts: customShortcuts }, { merge: true });
@@ -4540,9 +4548,10 @@
             var im = document.getElementById('info-modal');
             if(im) im.classList.add('active'); 
         }
-        function closeInfoModal() { 
+        function closeInfoModal() {
+            if(activeShortcutCapture) { window.removeEventListener('keydown', activeShortcutCapture, true); activeShortcutCapture=null; }
             var im = document.getElementById('info-modal');
-            if(im) im.classList.remove('active'); 
+            if(im) im.classList.remove('active');
         }
         function switchInfo(tab) {
             var tabs = ['win', 'update'];
@@ -4563,65 +4572,23 @@
         }
 
         function deployToGitHub() {
-            var verifiedUser = getVerifiedFirebaseUser();
-            if(!verifiedUser || verifiedUser.email.toLowerCase() !== "gab.rmz@icloud.com") {
-                showToast("❌ Sesión de administrador no verificada.");
-                return;
-            }
-            var repo = ghConfig.repo;
-            var branch = ghConfig.branch;
-            var token = ghConfig.token;
-            var code = document.getElementById('update-code-input').value;
-
-            if(!token) { showToast("❌ Error: No se encontró el Token en la nube."); return; }
-            if(!code || !code.includes('SLAPY-VERSION')) { showToast("❌ Código inválido. Faltan etiquetas de versión."); return; }
-
-            var vMatch = code.match(/\[SLAPY-VERSION:\s*(.*?)\]/i);
-            var version = vMatch ? vMatch[1].trim() : "update";
-
-            showToast("Conectando con GitHub... ⏳");
-            var apiUrl = "https://api.github.com/repos/" + repo + "/contents/index.html?ref=" + branch;
-            
-            fetch(apiUrl, { headers: { "Authorization": "token " + token, "Accept": "application/vnd.github.v3+json" } })
-            .then(res => {
-                if(!res.ok && res.status !== 404) throw new Error("Error obteniendo info del repositorio.");
-                return res.status === 404 ? { sha: null } : res.json();
-            })
-            .then(data => {
-                var payload = { message: "Deploy Slapy v" + version, content: utf8_to_b64(code), branch: branch };
-                if(data.sha) payload.sha = data.sha;
-
-                return fetch("https://api.github.com/repos/" + repo + "/contents/index.html", {
-                    method: "PUT", headers: { "Authorization": "token " + token, "Accept": "application/vnd.github.v3+json" },
-                    body: JSON.stringify(payload)
-                });
-            })
-            .then(res => {
-                if(!res.ok) throw new Error("Fallo al subir a GitHub. Revisa tu Token.");
-                return res.json();
-            })
-            .then(data => {
-                showToast("✅ ¡Deploy exitoso! v" + version + " subida a GitHub Pages.");
-                document.getElementById('update-code-input').value = "";
-                closeInfoModal();
-            })
-            .catch(err => { showToast("❌ Error: " + err.message); console.error(err); });
+            showToast('🔒 Deploy directo deshabilitado: Slapy ya no maneja tokens de escritura en el navegador.');
+            var area=document.getElementById('update-code-input');
+            if(area) area.setAttribute('aria-describedby','github-deploy-security-note');
         }
 
         setTimeout(function() {
-            var versionElement = document.getElementById('slapy-version-display');
-            if(!versionElement) return;
-            fetch(location.href).then(function(r) { return r.text(); }).then(function(html) {
-                var vMatch = html.match(/\[SLAPY-VERSION:\s*(.*?)\]/i);
-                if(vMatch) versionElement.innerText = "v" + vMatch[1].trim();
-            }).catch(function(e) {
-                var comments = Array.from(document.childNodes).filter(function(n) { return n.nodeType === 8; });
-                if(comments.length > 0) {
-                    var vMatch = comments[0].nodeValue.match(/\[SLAPY-VERSION:\s*(.*?)\]/i);
-                    if(vMatch) versionElement.innerText = "v" + vMatch[1].trim();
-                }
-            });
-        }, 800);
+            var versionElement=document.getElementById('slapy-version-display');
+            if(versionElement) versionElement.innerText='v'+SLAPY_VERSION;
+        }, 0);
+
+        var searchRefreshTimer = null;
+        var searchRefreshReset = false;
+        function scheduleSearchRefresh(resetIndex) {
+            searchRefreshReset = searchRefreshReset || !!resetIndex;
+            if(searchRefreshTimer) clearTimeout(searchRefreshTimer);
+            searchRefreshTimer=setTimeout(function(){ var reset=searchRefreshReset; searchRefreshReset=false; searchRefreshTimer=null; updateSearch(reset); }, 150);
+        }
 
         var searchState = { marks: [], index: -1, activeMark: null };
         var isBlockSearch = false;
@@ -4758,6 +4725,10 @@
             updateSearch(true);
         }
         
+
+        window.addEventListener('pagehide', function(){ flushLocalState().catch(function(){}); flushActivePreviewStorage(); });
+        document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') flushLocalState().catch(function(){}); });
+
         var searchInput = document.getElementById('live-search-input');
         if(searchInput) {
             searchInput.addEventListener('keydown', function(e) {
